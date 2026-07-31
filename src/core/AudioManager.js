@@ -12,7 +12,7 @@ export const SHOT_SAMPLES = Object.freeze({
   usp: Object.freeze({ path: 'audio/usp-shot.mp3', offset: 0, duration: .31, gain: .72 }),
   deagle: Object.freeze({ path: 'audio/deagle-shot.mp3', offset: 0, duration: .62, gain: .84 }),
   m4a1: Object.freeze({ path: 'audio/m4a1-shot.ogg', offset: 0, duration: .205, gain: .74 }),
-  awp: Object.freeze({ path: 'audio/awp-shot.ogg', offset: 0, duration: .72, gain: .9 })
+  awp: Object.freeze({ path: 'audio/awp1-shot.mp3', offset: .018, duration: 1.1, gain: .86 })
 });
 
 export function shotProfile(weapon) {

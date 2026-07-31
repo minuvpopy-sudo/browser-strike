@@ -377,5 +377,5 @@ test('подключение за бота переносит позицию, з
 test('Glock-18 использует отдельный многослойный профиль настоящего выстрела',()=>{
   const profile=shotProfile(WEAPONS.glock);
   assert.equal(profile,SHOT_PROFILES.glock);assert.ok(profile.crack.duration<profile.tail.duration);assert.ok(profile.crack.lowpass>profile.tail.lowpass);assert.ok(profile.body.frequency>profile.body.endFrequency);assert.ok(profile.slide.delay>0);assert.equal(shotProfile(WEAPONS.ak47),null);assert.equal(SHOT_SAMPLES.glock.path,'audio/glock-shot.mp3');assert.ok(SHOT_SAMPLES.glock.duration<.7);
-  assert.deepEqual(Object.keys(SHOT_SAMPLES).sort(),['awp','deagle','glock','m4a1','usp']);assert.ok(SHOT_SAMPLES.m4a1.duration<.25);assert.ok(SHOT_SAMPLES.awp.duration>SHOT_SAMPLES.m4a1.duration);
+  assert.deepEqual(Object.keys(SHOT_SAMPLES).sort(),['awp','deagle','glock','m4a1','usp']);assert.ok(SHOT_SAMPLES.m4a1.duration<.25);assert.ok(SHOT_SAMPLES.awp.duration>SHOT_SAMPLES.m4a1.duration);assert.equal(SHOT_SAMPLES.awp.path,'audio/awp1-shot.mp3');assert.ok(SHOT_SAMPLES.awp.duration<=1.1);
 });
