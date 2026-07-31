@@ -28,6 +28,7 @@ import { PlayerInventory } from '../src/player/PlayerInventory.js';
 import { PlayerMovement } from '../src/player/PlayerMovement.js';
 import { AutoUpdater, versionedPageUrl } from '../src/core/AutoUpdater.js';
 import { selectSpectatorTarget, takeOverBotState } from '../src/core/SpectatorMode.js';
+import { SHOT_PROFILES, shotProfile } from '../src/core/AudioManager.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -370,4 +371,9 @@ test('подключение за бота переносит позицию, з
   const bot={team:'attackers',alive:true,state:'attack',position:new THREE.Vector3(12,0,-7),velocity:new THREE.Vector3(2,0,1),health:83,armor:64,helmet:true,defuseKit:false,money:2750,weapon:WEAPONS.ak47,ammo:17,reserve:43,hasBomb:true,bombSite:{id:'A'},group:{visible:true}};
   const result=takeOverBotState(player,bot,knife);
   assert.ok(result);assert.equal(player.alive,true);assert.deepEqual(player.position,bot.position);assert.equal(player.health,83);assert.equal(player.armor,64);assert.equal(player.inventory.active.definition.id,'ak47');assert.equal(player.inventory.active.ammo,17);assert.equal(player.inventory.active.reserve,43);assert.ok(player.inventory.slots.bomb);assert.equal(bot.alive,false);assert.equal(bot.group.visible,false);
+});
+
+test('Glock-18 использует отдельный многослойный профиль настоящего выстрела',()=>{
+  const profile=shotProfile(WEAPONS.glock);
+  assert.equal(profile,SHOT_PROFILES.glock);assert.ok(profile.crack.duration<profile.tail.duration);assert.ok(profile.crack.lowpass>profile.tail.lowpass);assert.ok(profile.body.frequency>profile.body.endFrequency);assert.ok(profile.slide.delay>0);assert.equal(shotProfile(WEAPONS.ak47),null);
 });

@@ -1,3 +1,17 @@
+export const SHOT_PROFILES = Object.freeze({
+  glock: Object.freeze({
+    crack: Object.freeze({ duration: .052, gain: .56, highpass: 520, lowpass: 7200, decay: 96 }),
+    body: Object.freeze({ duration: .085, gain: .21, frequency: 185, endFrequency: 82, wave: 'triangle' }),
+    slide: Object.freeze({ delay: .018, duration: .038, gain: .052, frequency: 2600, endFrequency: 840, wave: 'square' }),
+    tail: Object.freeze({ delay: .026, duration: .17, gain: .105, highpass: 110, lowpass: 1850, decay: 18 })
+  })
+});
+
+export function shotProfile(weapon) {
+  const id = typeof weapon === 'string' ? weapon : weapon?.id;
+  return SHOT_PROFILES[id] || null;
+}
+
 export class AudioManager {
   constructor(settings) { this.settings = settings; this.context = null; this.master = null; this.unlocked = false; }
   unlock() {
@@ -29,8 +43,13 @@ export class AudioManager {
     filter.type = 'bandpass'; filter.frequency.value = 850; gain.gain.setValueAtTime(gainValue, this.context.currentTime); gain.gain.exponentialRampToValueAtTime(.0001, this.context.currentTime + duration);
     source.buffer = buffer; source.connect(filter).connect(gain).connect(this.master); source.start();
   }
-  shot(power = 1) {
+  shot(power = 1, weapon = null) {
     if (!this.unlocked || !this.context) return;
+    const profile = shotProfile(weapon);
+    if (profile) {
+      this.profiledShot(profile, power);
+      return;
+    }
     const now = this.context.currentTime;
     const volume = (this.settings.values.shotsVolume ?? 80) / 100;
     const strength = Math.max(.65, Math.min(1.35, power));
@@ -61,6 +80,54 @@ export class AudioManager {
     crack.connect(highpass).connect(lowpass).connect(crackGain).connect(this.master);
     crack.start(now);
     crack.stop(now + duration);
+  }
+  profiledShot(profile, power = 1) {
+    const now = this.context.currentTime;
+    const volume = (this.settings.values.shotsVolume ?? 80) / 100;
+    const strength = Math.max(.65, Math.min(1.35, power));
+    const variation = .97 + Math.random() * .06;
+    const bus = this.context.createGain();
+    const compressor = this.context.createDynamicsCompressor();
+    bus.gain.setValueAtTime(.46 * volume * strength, now);
+    compressor.threshold.setValueAtTime(-18, now);
+    compressor.knee.setValueAtTime(12, now);
+    compressor.ratio.setValueAtTime(7, now);
+    compressor.attack.setValueAtTime(.001, now);
+    compressor.release.setValueAtTime(.09, now);
+    bus.connect(compressor).connect(this.master);
+    this.noiseLayer(bus, profile.crack, now, variation);
+    this.oscillatorLayer(bus, profile.body, now, variation);
+    this.oscillatorLayer(bus, profile.slide, now, variation);
+    this.noiseLayer(bus, profile.tail, now, variation);
+  }
+  noiseLayer(destination, layer, now, variation = 1) {
+    const start = now + (layer.delay || 0);
+    const length = Math.ceil(this.context.sampleRate * layer.duration);
+    const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
+    const data = buffer.getChannelData(0);
+    let colored = 0;
+    for (let i = 0; i < length; i++) {
+      const time = i / this.context.sampleRate;
+      const white = Math.random() * 2 - 1;
+      colored = colored * .66 + white * .34;
+      data[i] = (white * .68 + colored * .32) * Math.exp(-time * layer.decay);
+    }
+    const source = this.context.createBufferSource();
+    const highpass = this.context.createBiquadFilter();
+    const lowpass = this.context.createBiquadFilter();
+    const gain = this.context.createGain();
+    highpass.type = 'highpass';highpass.frequency.setValueAtTime(layer.highpass * variation, start);
+    lowpass.type = 'lowpass';lowpass.frequency.setValueAtTime(layer.lowpass * variation, start);
+    gain.gain.setValueAtTime(layer.gain, start);gain.gain.exponentialRampToValueAtTime(.0001, start + layer.duration);
+    source.buffer = buffer;source.connect(highpass).connect(lowpass).connect(gain).connect(destination);source.start(start);source.stop(start + layer.duration + .01);
+  }
+  oscillatorLayer(destination, layer, now, variation = 1) {
+    const start = now + (layer.delay || 0);
+    const oscillator = this.context.createOscillator();
+    const gain = this.context.createGain();
+    oscillator.type = layer.wave;oscillator.frequency.setValueAtTime(layer.frequency * variation, start);oscillator.frequency.exponentialRampToValueAtTime(layer.endFrequency * variation, start + layer.duration);
+    gain.gain.setValueAtTime(layer.gain, start);gain.gain.exponentialRampToValueAtTime(.0001, start + layer.duration);
+    oscillator.connect(gain).connect(destination);oscillator.start(start);oscillator.stop(start + layer.duration + .01);
   }
   click() { this.tone('ui', { frequency: 520, endFrequency: 300, gain: .035, duration: .045 }); }
   empty() { this.tone('ui', { frequency: 170, endFrequency: 120, gain: .045, duration: .04 }); }

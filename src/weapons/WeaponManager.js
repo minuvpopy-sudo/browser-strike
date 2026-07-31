@@ -246,7 +246,7 @@ export class WeaponManager extends EventTarget {
         }
         return;
       }
-      this.audio.shot(Math.max(0.7, active.definition.damage / 40));
+      this.audio.shot(Math.max(0.7, active.definition.damage / 40), active.definition);
       camera.addRecoil(result.recoil);
       this.group.position.z += 0.1;
       this.flashTime = 0.035;
