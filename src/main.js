@@ -9,6 +9,7 @@ import { KnifeMenu } from './ui/KnifeMenu.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
 import { Game } from './core/Game.js';
 import { KNIFE_TYPES } from './skins/KnifeSkinDefinitions.js';
+import { AutoUpdater } from './core/AutoUpdater.js';
 
 const settings=new SettingsManager();
 const save=new SaveManager();
@@ -32,4 +33,5 @@ mainMenu.addEventListener('newgame',()=>start(false));
 mainMenu.addEventListener('quickmatch',()=>start(true));
 settingsMenu.addEventListener('saved',()=>audio.click());
 
-window.browserStrike={game,settings,version:'1.0.0'};
+const autoUpdater=new AutoUpdater({version:__BUILD_VERSION__,canReload:()=>!game.active}).start();
+window.browserStrike={game,settings,autoUpdater,version:__BUILD_VERSION__};

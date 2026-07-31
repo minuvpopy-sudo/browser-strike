@@ -25,6 +25,7 @@ import { animateKnifeWaves, collectKnifeWaveMaterials, createKnifeBladeMaterial,
 import { SkinPreview } from '../src/skins/SkinPreview.js';
 import { PlayerInventory } from '../src/player/PlayerInventory.js';
 import { PlayerMovement } from '../src/player/PlayerMovement.js';
+import { AutoUpdater, versionedPageUrl } from '../src/core/AutoUpdater.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -159,6 +160,20 @@ test('единичный скачок мыши не разворачивает �
   }finally{globalThis.document=originalDocument;}
 });
 
+test('новая опубликованная версия автоматически обходит кэш браузера',async()=>{
+  let replaced='';
+  const updater=new AutoUpdater({
+    version:'old',
+    fetcher:async()=>({ok:true,json:async()=>({version:'new'})}),
+    locationRef:{href:'https://example.test/browser-strike/?team=t',replace(url){replaced=url;}},
+    documentRef:{baseURI:'https://example.test/browser-strike/',hidden:false},
+    canReload:()=>true
+  });
+  assert.equal(await updater.check(),true);
+  assert.equal(new URL(replaced).searchParams.get('bs-version'),'new');
+  assert.equal(new URL(versionedPageUrl('https://example.test/game?x=1','v2')).searchParams.get('x'),'1');
+});
+
 test('бот строит проходимый маршрут от базы к точке и действительно движется',()=>{
   const collision=new CollisionWorld(MAP_CONFIG);const navigation=new BotNavigation(new NavigationGraph(MAP_CONFIG),collision);
   const bot={index:1,position:new THREE.Vector3(MAP_CONFIG.attackerSpawns[0].x,0,MAP_CONFIG.attackerSpawns[0].z),velocity:new THREE.Vector3()};
@@ -178,8 +193,9 @@ test('бот строит проходимый маршрут от базы к �
 test('бот после реакции расходует патрон и создаёт вспышку выстрела',()=>{
   const bot={weapon:WEAPONS.ak47,ammo:30,reserve:90,reloadTime:0,state:'attack',position:new THREE.Vector3(),velocity:new THREE.Vector3(),flashTime:0,kills:0,addMoney(){}};
   const target={alive:true,position:new THREE.Vector3(12,0,0),armor:0,helmet:false,takeDamage(){return false;}};
-  const combat=new BotCombat(bot,'expert',null);combat.update(.2,target,true);
+  let unwantedSounds=0;const combat=new BotCombat(bot,'expert',{shot(){unwantedSounds++;}});combat.update(.2,target,true);
   assert.equal(bot.ammo,29);assert.ok(bot.flashTime>0);
+  assert.equal(unwantedSounds,0);
 });
 
 test('меню покупки не пересоздаёт кнопки каждый кадр',()=>{
