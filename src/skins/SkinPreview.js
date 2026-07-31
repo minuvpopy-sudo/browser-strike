@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { KNIFE_SKINS } from './KnifeSkinDefinitions.js';
+import { animateKnifeWaves, createKnifeBladeMaterial, disposeKnifeMaterial } from './KnifeMaterial.js';
 
 export class SkinPreview {
   constructor(canvas) {
@@ -45,7 +46,8 @@ export class SkinPreview {
     for (const child of [...this.group.children]) {
       child.traverse((object) => {
         object.geometry?.dispose();
-        object.material?.dispose();
+        if (Array.isArray(object.material)) object.material.forEach(disposeKnifeMaterial);
+        else disposeKnifeMaterial(object.material);
       });
       this.group.remove(child);
     }
@@ -54,22 +56,32 @@ export class SkinPreview {
   rebuild() {
     this.clearModel();
     const style = KNIFE_SKINS[this.skin] || KNIFE_SKINS.classic;
-    const bladeMaterial = new THREE.MeshStandardMaterial({ color: style.blade, metalness: .82, roughness: .25, flatShading: true });
+    const bladeMaterial = createKnifeBladeMaterial(style);
     const gripMaterial = new THREE.MeshStandardMaterial({ color: style.handle, metalness: .28, roughness: .64, flatShading: true });
     const detailMaterial = new THREE.MeshStandardMaterial({ color: 0xb3a371, metalness: .82, roughness: .24, flatShading: true });
 
     if (this.type === 'karambit') {
       const bladeShape = new THREE.Shape();
       bladeShape.moveTo(-.12, -.02);
-      bladeShape.bezierCurveTo(.42, -.24, .72, -.82, 1.72, -.95);
-      bladeShape.bezierCurveTo(2.04, -.98, 2.31, -.79, 2.48, -.57);
-      bladeShape.bezierCurveTo(2.16, -.59, 1.9, -.47, 1.63, -.25);
-      bladeShape.bezierCurveTo(1.28, .04, .85, .34, .22, .48);
+      bladeShape.bezierCurveTo(.15, -.85, 1.1, -1.32, 1.95, -1.05);
+      bladeShape.bezierCurveTo(2.3, -.95, 2.6, -.65, 2.75, -.28);
+      bladeShape.bezierCurveTo(2.4, -.42, 2.05, -.43, 1.73, -.18);
+      bladeShape.bezierCurveTo(1.26, .22, .78, .55, .15, .56);
       bladeShape.lineTo(-.1, .36);
       bladeShape.closePath();
       const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .1, curveSegments: 12, bevelEnabled: true, bevelThickness: .03, bevelSize: .022, bevelSegments: 2 }), bladeMaterial);
       blade.name = 'karambit-preview-blade';
       this.group.add(blade);
+
+      const edgeCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-.07, .38, .145), new THREE.Vector3(.4, .52, .145),
+        new THREE.Vector3(.84, .46, .145), new THREE.Vector3(1.3, .16, .145),
+        new THREE.Vector3(1.73, -.18, .145), new THREE.Vector3(2.18, -.4, .145),
+        new THREE.Vector3(2.7, -.29, .145)
+      ]);
+      const edge = new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 28, .025, 6, false), new THREE.MeshStandardMaterial({ color: 0xd8e5e9, metalness: .96, roughness: .12 }));
+      edge.name = 'karambit-preview-edge';
+      this.group.add(edge);
 
       const handleShape = new THREE.Shape();
       handleShape.moveTo(-.08, -.08);
@@ -104,7 +116,7 @@ export class SkinPreview {
       ringLiner.position.copy(ring.position);
       this.group.add(ringLiner);
 
-      const guard = new THREE.Mesh(new THREE.BoxGeometry(.17, .78, .2), detailMaterial);
+      const guard = new THREE.Mesh(new THREE.BoxGeometry(.17, .58, .2), detailMaterial);
       guard.position.set(-.02, .17, .03);
       guard.rotation.z = -.12;
       this.group.add(guard);
@@ -146,6 +158,7 @@ export class SkinPreview {
     const dt = Math.min(.05, Math.max(0, (now - this.lastFrame) / 1000));
     this.lastFrame = now;
     this.resize();
+    animateKnifeWaves(this.group, now / 1000);
 
     if (this.inspectLeft > 0) {
       const duration = this.type === 'karambit' ? 2.2 : 1.5;

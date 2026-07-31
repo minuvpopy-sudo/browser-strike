@@ -17,7 +17,7 @@ export const WEAPONS = Object.freeze({
   galil:W('galil','Galil','rifles',2000,'attackers',30,10.5,35,90,2.7,.03,.75,.94,125),
   famas:W('famas','FAMAS','rifles',2250,'defenders',29,10.8,25,90,2.8,.027,.7,.94,125,'burst'),
   ak47:W('ak47','AK-47','rifles',2500,'attackers',36,10,30,90,2.6,.026,1,.92,150),
-  m4a1:W('m4a1','M4A1','rifles',3100,'defenders',33,11,30,90,3.05,.021,.78,.94,145),
+  m4a1:W('m4a1','M4A4','rifles',3100,'defenders',33,11,30,90,3.05,.021,.78,.94,145),
   scout:W('scout','Scout','rifles',2750,'both',72,1.4,10,90,2.6,.008,1.25,.98,210,'bolt',{scope:true}),
   awp:W('awp','AWP','rifles',4750,'both',112,.85,10,30,3.65,.006,2.1,.82,260,'bolt',{scope:true}),
   sg552:W('sg552','SG552','rifles',3500,'attackers',34,9.8,30,90,3.1,.025,.86,.91,155,'auto',{scope:true}),

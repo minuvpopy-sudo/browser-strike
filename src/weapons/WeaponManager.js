@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Firearm } from './Firearm.js';
 import { Knife } from './Knife.js';
+import { animateKnifeWaves, createKnifeBladeMaterial, disposeKnifeMaterial } from '../skins/KnifeMaterial.js';
 
 const easeOutBack = (t) => {
   const c1 = 1.70158;
@@ -25,11 +26,14 @@ export class WeaponManager extends EventTarget {
     this.scoped = false;
     this.flashTime = 0;
     this.drawTime = 0;
+    this.skinTime = 0;
     this.knifeAction = null;
     this.rebuild();
   }
 
   update(dt) {
+    this.skinTime += dt;
+    animateKnifeWaves(this.group, this.skinTime);
     const active = this.player.inventory.active;
     if (active) {
       const result = active.update(dt);
@@ -257,8 +261,8 @@ export class WeaponManager extends EventTarget {
     for (const child of [...this.group.children]) {
       child.traverse((object) => {
         object.geometry?.dispose();
-        if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose());
-        else object.material?.dispose();
+        if (Array.isArray(object.material)) object.material.forEach(disposeKnifeMaterial);
+        else disposeKnifeMaterial(object.material);
       });
       this.group.remove(child);
     }
@@ -312,13 +316,39 @@ export class WeaponManager extends EventTarget {
       addBox('receiver-top', [.26, .09, bodyLength * .72], [0, .18, -bodyLength * .47], detail);
       addCylinder('barrel', [shotgun ? .055 : .038, shotgun ? .062 : .047], barrelLength, [0, .055, -bodyLength - barrelLength * .44]);
       addBox('pistol-grip', [.2, .4, .24], [0, -.29, -.17], dark, [-.22, 0, 0]);
+      const triggerGuard = new THREE.Mesh(new THREE.TorusGeometry(.105, .018, 4, 12, Math.PI), detail);
+      triggerGuard.name = 'rifle-trigger-guard';
+      triggerGuard.rotation.set(0, Math.PI / 2, Math.PI / 2);
+      triggerGuard.position.set(0, -.16, -.34);
+      this.group.add(triggerGuard);
 
       if (definition.id === 'ak47') {
-        addBox('wood-stock', [.31, .28, .62], [0, -.01, .36], wood, [-.08, 0, 0]);
-        addBox('wood-handguard', [.31, .2, .48], [0, -.02, -bodyLength * .98], wood);
-        addBox('magazine-upper', [.22, .34, .22], [0, -.3, -.38], detail, [-.14, 0, 0]);
-        addBox('magazine-lower', [.21, .34, .2], [0, -.57, -.29], detail, [-.38, 0, 0]);
-        addCylinder('gas-tube', [.025, .025], .52, [0, .17, -1.0], detail);
+        addBox('wood-stock', [.34, .25, .52], [0, -.01, .3], wood, [-.08, 0, 0]);
+        addBox('wood-stock-comb', [.3, .14, .36], [0, .12, .39], wood, [-.05, 0, 0]);
+        addBox('wood-buttplate', [.36, .36, .11], [0, -.03, .61], detail, [-.08, 0, 0]);
+        addBox('wood-handguard', [.35, .2, .48], [0, -.03, -bodyLength * .98], wood, [.03, 0, 0]);
+        addBox('wood-upper-handguard', [.28, .14, .44], [0, .14, -bodyLength * 1.01], wood, [-.02, 0, 0]);
+        addBox('magazine-upper', [.23, .28, .22], [0, -.28, -.38], detail, [-.12, 0, 0]);
+        addBox('magazine-middle', [.22, .27, .2], [0, -.49, -.32], detail, [-.3, 0, 0]);
+        addBox('magazine-lower', [.2, .23, .18], [0, -.66, -.2], detail, [-.5, 0, 0]);
+        addCylinder('gas-tube', [.027, .027], .56, [0, .21, -1.0], detail);
+        addBox('gas-block', [.16, .2, .13], [0, .14, -1.23], metal);
+        addBox('charging-handle', [.1, .055, .2], [.18, .14, -.35], detail);
+        addCylinder('ak-muzzle-brake', [.055, .048], .18, [0, .055, -1.52], metal);
+      } else if (definition.id === 'm4a1') {
+        addCylinder('m4-buffer-tube', [.045, .045], .5, [0, .06, .28], metal);
+        addBox('m4-stock', [.33, .27, .46], [0, -.01, .38], dark, [-.04, 0, 0]);
+        addBox('m4-stock-cut', [.2, .12, .28], [0, -.02, .36], metal, [-.04, 0, 0]);
+        addBox('m4-buttpad', [.36, .36, .1], [0, -.02, .63], dark);
+        addBox('m4-handguard', [.34, .24, .58], [0, -.01, -.88], dark);
+        for (const z of [-.65, -.76, -.87, -.98, -1.09]) addBox('m4-handguard-rib', [.36, .035, .045], [0, .12, z], metal);
+        addBox('m4-magazine', [.22, .5, .24], [0, -.4, -.36], metal, [.05, 0, 0]);
+        addBox('m4-carry-handle', [.18, .14, .46], [0, .3, -.34], dark);
+        addBox('m4-carry-support-rear', [.19, .16, .08], [0, .23, -.16], dark);
+        addBox('m4-carry-support-front', [.19, .16, .08], [0, .23, -.52], dark);
+        addBox('m4-front-sight-base', [.18, .22, .12], [0, .17, -1.2], dark);
+        addBox('m4-front-sight-post', [.045, .13, .045], [0, .34, -1.2], metal);
+        addCylinder('m4-muzzle-brake', [.053, .045], .17, [0, .055, -1.52], metal);
       } else {
         const stockMaterial = ['galil', 'scout'].includes(definition.id) ? wood : dark;
         addBox('stock', [.29, .25, smg ? .38 : .56], [0, -.01, smg ? .27 : .34], stockMaterial, [-.07, 0, 0]);
@@ -359,12 +389,7 @@ export class WeaponManager extends EventTarget {
 
   buildKnife(knife) {
     const style = this.skinManager.knifeStyle();
-    const bladeMaterial = new THREE.MeshStandardMaterial({
-      color: style.blade,
-      metalness: .88,
-      roughness: .22,
-      flatShading: true
-    });
+    const bladeMaterial = createKnifeBladeMaterial(style);
     const gripMaterial = new THREE.MeshStandardMaterial({
       color: style.handle,
       metalness: .32,
@@ -385,11 +410,11 @@ export class WeaponManager extends EventTarget {
       pivot.add(model);
 
       const bladeShape = new THREE.Shape();
-      bladeShape.moveTo(-.16, .04);
-      bladeShape.bezierCurveTo(-.48, -.18, -.68, -.6, -.56, -.98);
-      bladeShape.bezierCurveTo(-.46, -1.28, -.12, -1.5, .36, -1.55);
-      bladeShape.bezierCurveTo(.26, -1.37, .14, -1.18, -.02, -.98);
-      bladeShape.bezierCurveTo(.17, -.77, .28, -.46, .18, -.18);
+      bladeShape.moveTo(-.2, .04);
+      bladeShape.bezierCurveTo(-.7, -.25, -.9, -.92, -.56, -1.36);
+      bladeShape.bezierCurveTo(-.36, -1.64, .07, -1.8, .55, -1.7);
+      bladeShape.bezierCurveTo(.43, -1.53, .22, -1.28, -.08, -1.03);
+      bladeShape.bezierCurveTo(.24, -.77, .31, -.42, .18, -.14);
       bladeShape.lineTo(.14, .04);
       bladeShape.closePath();
       const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .07, curveSegments: 10, bevelEnabled: true, bevelThickness: .018, bevelSize: .014, bevelSegments: 2 }), bladeMaterial);
@@ -399,11 +424,13 @@ export class WeaponManager extends EventTarget {
       model.add(blade);
 
       const edgeCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(.14, .075, -.16), new THREE.Vector3(.23, .075, -.46),
-        new THREE.Vector3(.1, .075, -.8), new THREE.Vector3(-.02, .075, -.98),
-        new THREE.Vector3(.18, .075, -1.34), new THREE.Vector3(.35, .075, -1.53)
+        new THREE.Vector3(.15, .075, -.14), new THREE.Vector3(.25, .075, -.43),
+        new THREE.Vector3(.15, .075, -.76), new THREE.Vector3(-.08, .075, -1.03),
+        new THREE.Vector3(.21, .075, -1.3), new THREE.Vector3(.43, .075, -1.53),
+        new THREE.Vector3(.54, .075, -1.69)
       ]);
-      const edge = new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 22, .014, 5, false), pinMaterial);
+      const edgeMaterial = new THREE.MeshStandardMaterial({ color: 0xd5e1e4, metalness: .96, roughness: .12, flatShading: true });
+      const edge = new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 28, .016, 5, false), edgeMaterial);
       edge.name = 'karambit-edge';
       model.add(edge);
 
@@ -503,7 +530,7 @@ export class WeaponManager extends EventTarget {
     this.group.userData.baseRotation = baseRotation;
     this.group.rotation.copy(baseRotation);
     this.group.position.set(.4, knife.variant === 'karambit' ? -.39 : -.4, knife.variant === 'karambit' ? -1.28 : -1);
-    this.group.scale.setScalar(knife.variant === 'karambit' ? .58 : .68);
+    this.group.scale.setScalar(knife.variant === 'karambit' ? .56 : .68);
   }
 
   dispatch(type) {

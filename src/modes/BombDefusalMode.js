@@ -5,7 +5,16 @@ import { ECONOMY } from '../config/MatchRules.js';
 export class BombDefusalMode extends GameMode {
   constructor(game,rounds){super(game);this.rounds=rounds;this.carrier=null;this.planted=false;this.site=null;this.timer=0;this.progress=0;this.defuseProgress=0;this.beep=0;this.bomb=this.createBomb();this.game.scene.add(this.bomb);this.bomb.visible=false;}
   createBomb(){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(.42,.22,.3),new THREE.MeshStandardMaterial({color:0x273125,roughness:.65}));g.add(body);const light=new THREE.Mesh(new THREE.SphereGeometry(.035,6,5),new THREE.MeshBasicMaterial({color:0xff3322}));light.position.set(.2,.12,0);light.name='light';g.add(light);for(let i=0;i<3;i++){const wire=new THREE.Mesh(new THREE.TorusGeometry(.13+i*.035,.012,4,8,Math.PI),new THREE.MeshBasicMaterial({color:[0xd8493c,0x4b78bd,0xe4ca4d][i]}));wire.rotation.x=Math.PI/2;wire.position.y=.12;g.add(wire);}return g;}
-  beginRound(){this.carrier=null;this.planted=false;this.site=null;this.timer=this.game.settings.values.bombTime;this.progress=0;this.defuseProgress=0;this.bomb.visible=false;const botAttackers=this.game.botManager.bots.filter(e=>e.team==='attackers'&&e.alive);const attackers=botAttackers.length?botAttackers:[this.game.player].filter(e=>e.team==='attackers'&&e.alive);this.carrier=attackers[Math.floor(Math.random()*attackers.length)]||null;if(this.carrier){this.carrier.hasBomb=true;this.carrier.bombSite=this.game.mapConfig.bombSites[Math.floor(Math.random()*this.game.mapConfig.bombSites.length)];if(this.carrier.isPlayer)this.carrier.inventory.slots.bomb=true;}this.emitState();}
+  beginRound(){
+    this.carrier=null;this.planted=false;this.site=null;this.timer=this.game.settings.values.bombTime;this.progress=0;this.defuseProgress=0;this.bomb.visible=false;
+    const entities=[this.game.player,...this.game.botManager.bots];
+    for(const entity of entities){entity.hasBomb=false;entity.bombSite=null;if(entity.isPlayer)entity.inventory.slots.bomb=false;}
+    const playerAttacker=this.game.player.team==='attackers'&&this.game.player.alive?this.game.player:null;
+    const botAttackers=this.game.botManager.bots.filter(entity=>entity.team==='attackers'&&entity.alive);
+    this.carrier=playerAttacker||botAttackers[Math.floor(Math.random()*botAttackers.length)]||null;
+    if(this.carrier){this.carrier.hasBomb=true;this.carrier.bombSite=this.game.mapConfig.bombSites[Math.floor(Math.random()*this.game.mapConfig.bombSites.length)];if(this.carrier.isPlayer)this.carrier.inventory.slots.bomb=true;}
+    this.emitState();
+  }
   update(dt){if(!this.active||this.rounds.state!=='live')return;if(this.carrier&&!this.carrier.alive){this.drop(this.carrier.position);}
     if(!this.planted)this.updatePlant(dt);else this.updateDefuse(dt);
   }

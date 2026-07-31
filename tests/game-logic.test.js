@@ -20,6 +20,8 @@ import { BuyMenu } from '../src/ui/BuyMenu.js';
 import { applyDamageSafely, selectMeleeTarget } from '../src/core/CombatResolver.js';
 import { InputManager } from '../src/core/InputManager.js';
 import { GameLoop } from '../src/core/GameLoop.js';
+import { KNIFE_SKINS } from '../src/skins/KnifeSkinDefinitions.js';
+import { createKnifeBladeMaterial, disposeKnifeMaterial } from '../src/skins/KnifeMaterial.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -105,10 +107,18 @@ test('все боты, включая передового, закупают о�
 
 test('бот-террорист получает бомбу и устанавливает её даже в состоянии атаки',()=>{
   const carrier={team:'attackers',alive:true,isPlayer:false,hasBomb:false,state:'attack',position:new THREE.Vector3(),addMoney(){}};
-  const player={team:'attackers',alive:true,isPlayer:true,inventory:{slots:{bomb:false}},position:new THREE.Vector3()};
+  const player={team:'defenders',alive:true,isPlayer:true,inventory:{slots:{bomb:false}},position:new THREE.Vector3()};
   const game={scene:new THREE.Scene(),settings:{values:{bombTime:40}},player,botManager:{bots:[carrier],alive:()=>[]},mapConfig:MAP_CONFIG,hud:{interaction(){},message(){}},audio:{tone(){},explosion(){}},explosion:{spawn(){}}};
   const mode=new BombDefusalMode(game,{state:'live',end(){}});mode.beginRound();assert.equal(mode.carrier,carrier);assert.ok(carrier.bombSite);
   carrier.position.set(carrier.bombSite.x,0,carrier.bombSite.z);mode.updatePlant(3.3);assert.equal(mode.planted,true);assert.equal(mode.carrier,null);mode.dispose();
+});
+
+test('игрок-террорист всегда получает бомбу, даже если в команде есть живые боты',()=>{
+  const bot={team:'attackers',alive:true,isPlayer:false,hasBomb:true,position:new THREE.Vector3()};
+  const player={team:'attackers',alive:true,isPlayer:true,hasBomb:false,inventory:{slots:{bomb:false}},position:new THREE.Vector3()};
+  const game={scene:new THREE.Scene(),settings:{values:{bombTime:40}},player,botManager:{bots:[bot]},mapConfig:MAP_CONFIG};
+  const mode=new BombDefusalMode(game,{state:'live'});mode.beginRound();
+  assert.equal(mode.carrier,player);assert.equal(player.hasBomb,true);assert.equal(player.inventory.slots.bomb,true);assert.equal(bot.hasBomb,false);mode.dispose();
 });
 
 test('другой бот подбирает выпавшую бомбу и получает новую точку',()=>{
@@ -201,13 +211,27 @@ test('классическая модель AK имеет приклад, маг
   assert.equal(manager.group.getObjectByName('receiver').material.flatShading,true);
 });
 
+test('основные винтовки имеют отдельные классические модели AK-47 и M4A4',()=>{
+  const skinManager={weapon:()=>({colors:[0x343a34,0x151816]})};
+  const akManager=new WeaponManager(new THREE.Group(),{alive:true,velocity:new THREE.Vector3(),inventory:{active:new Firearm(WEAPONS.ak47)}},{},{},skinManager);
+  assert.ok(akManager.group.getObjectByName('wood-upper-handguard'));assert.ok(akManager.group.getObjectByName('magazine-middle'));assert.ok(akManager.group.getObjectByName('ak-muzzle-brake'));
+  const m4Manager=new WeaponManager(new THREE.Group(),{alive:true,velocity:new THREE.Vector3(),inventory:{active:new Firearm(WEAPONS.m4a1)}},{},{},skinManager);
+  assert.equal(WEAPONS.m4a1.name,'M4A4');assert.ok(m4Manager.group.getObjectByName('m4-stock'));assert.ok(m4Manager.group.getObjectByName('m4-handguard'));assert.ok(m4Manager.group.getObjectByName('m4-carry-handle'));assert.ok(m4Manager.group.getObjectByName('m4-magazine'));
+});
+
+test('скин «Волны» создаёт анимированный чёрно-синий металлический материал',()=>{
+  assert.equal(KNIFE_SKINS.waves.pattern,'waves');
+  const material=createKnifeBladeMaterial(KNIFE_SKINS.waves);
+  assert.equal(material.userData.animatedWaves,true);assert.ok(material.metalness>.9);assert.ok(material.iridescence>0);disposeKnifeMaterial(material);
+});
+
 test('керамбит имеет кольцо, изогнутый клинок и многоосевую анимацию осмотра',()=>{
   const knife=new Knife(WEAPONS.knife,'karambit','classic');const player={alive:true,velocity:new THREE.Vector3(),inventory:{active:knife}};const camera=new THREE.Group();
   const manager=new WeaponManager(camera,player,{}, {}, {knifeStyle:()=>({blade:0xcccccc,handle:0x222222})});
   const pivot=manager.group.getObjectByName('karambit-pivot');const ring=manager.group.getObjectByName('karambit-ring');const blade=manager.group.getObjectByName('karambit-blade');
   assert.ok(pivot);assert.ok(ring);assert.ok(blade);assert.ok(manager.group.getObjectByName('karambit-handle'));assert.ok(manager.group.getObjectByName('karambit-edge'));
   blade.geometry.computeBoundingBox();const bladeSize=new THREE.Vector3();blade.geometry.boundingBox.getSize(bladeSize);
-  assert.ok(bladeSize.y>1.45);assert.ok(bladeSize.x>.8);assert.ok(ring.geometry.parameters.radius>=.2);assert.ok(Math.abs(ring.rotation.x-Math.PI/2)<.001);assert.ok(pivot.position.z>.9);
+  assert.ok(bladeSize.y>1.7);assert.ok(bladeSize.x>1.1);assert.ok(ring.geometry.parameters.radius>=.2);assert.ok(Math.abs(ring.rotation.x-Math.PI/2)<.001);assert.ok(pivot.position.z>.9);
   manager.drawTime=0;knife.inspecting=2;manager.update(.08);
   assert.notEqual(pivot.rotation.y,0);assert.notEqual(manager.group.rotation.z,manager.group.userData.baseRotation.z);
 });
