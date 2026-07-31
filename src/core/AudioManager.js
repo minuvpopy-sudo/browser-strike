@@ -8,7 +8,11 @@ export const SHOT_PROFILES = Object.freeze({
 });
 
 export const SHOT_SAMPLES = Object.freeze({
-  glock: Object.freeze({ path: 'audio/glock-shot.mp3', offset: .055, duration: .56, gain: .82 })
+  glock: Object.freeze({ path: 'audio/glock-shot.mp3', offset: .055, duration: .56, gain: .82 }),
+  usp: Object.freeze({ path: 'audio/usp-shot.mp3', offset: 0, duration: .31, gain: .72 }),
+  deagle: Object.freeze({ path: 'audio/deagle-shot.mp3', offset: 0, duration: .62, gain: .84 }),
+  m4a1: Object.freeze({ path: 'audio/m4a1-shot.ogg', offset: 0, duration: .205, gain: .74 }),
+  awp: Object.freeze({ path: 'audio/awp-shot.ogg', offset: 0, duration: .72, gain: .9 })
 });
 
 export function shotProfile(weapon) {
@@ -54,11 +58,11 @@ export class AudioManager {
     osc.connect(gain).connect(this.master); osc.start(now); osc.stop(now + (options.duration || .08) + .02);
     if (type === 'shot') this.noise(options.gain || .13, options.duration || .09);
   }
-  noise(gainValue = .1, duration = .1) {
+  noise(gainValue = .1, duration = .1, frequency = 850) {
     const length = Math.ceil(this.context.sampleRate * duration); const buffer = this.context.createBuffer(1, length, this.context.sampleRate); const data = buffer.getChannelData(0);
     for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
     const source = this.context.createBufferSource(); const filter = this.context.createBiquadFilter(); const gain = this.context.createGain();
-    filter.type = 'bandpass'; filter.frequency.value = 850; gain.gain.setValueAtTime(gainValue, this.context.currentTime); gain.gain.exponentialRampToValueAtTime(.0001, this.context.currentTime + duration);
+    filter.type = 'bandpass'; filter.frequency.value = frequency; gain.gain.setValueAtTime(gainValue, this.context.currentTime); gain.gain.exponentialRampToValueAtTime(.0001, this.context.currentTime + duration);
     source.buffer = buffer; source.connect(filter).connect(gain).connect(this.master); source.start();
   }
   shot(power = 1, weapon = null) {
@@ -171,6 +175,12 @@ export class AudioManager {
     oscillator.connect(gain).connect(destination);oscillator.start(start);oscillator.stop(start + layer.duration + .01);
   }
   click() { this.tone('ui', { frequency: 520, endFrequency: 300, gain: .035, duration: .045 }); }
+  scope(enabled) {
+    if (!this.unlocked || !this.context) return;
+    const volume = (this.settings.values.uiVolume ?? 60) / 100;
+    this.tone('ui', { frequency: enabled ? 1120 : 790, endFrequency: enabled ? 470 : 560, gain: .034, duration: .038, wave: 'square' });
+    this.noise(.016 * volume, .045, enabled ? 2300 : 1750);
+  }
   empty() { this.tone('ui', { frequency: 170, endFrequency: 120, gain: .045, duration: .04 }); }
   reload() { this.tone('ui', { frequency: 240, endFrequency: 100, gain: .045, duration: .12 }); }
   step() {}

@@ -218,7 +218,9 @@ export class WeaponManager extends EventTarget {
     }
     if (this.input.justPressed('inspect') && active?.inspect()) this.audio.click();
 
-    this.scoped = Boolean(active?.definition?.scope && this.input.mouseButtons.has(2));
+    const nextScoped = Boolean(active?.definition?.scope && this.input.mouseButtons.has(2));
+    if (nextScoped !== this.scoped) this.audio.scope?.(nextScoped);
+    this.scoped = nextScoped;
     this.group.visible = !this.scoped;
     const down = this.input.mouseButtons.has(0);
     const auto = active?.definition?.mode === 'auto';

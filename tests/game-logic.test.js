@@ -328,8 +328,9 @@ test('пистолеты не состоят из квадратных блок�
 
 test('оптический прицел скрывает модель винтовки и включает режим перекрестия',()=>{
   const gun=new Firearm(WEAPONS.awp);const inventory={active:gun,equip(){},quickSwap(){},cycle(){}};const player={alive:true,velocity:new THREE.Vector3(),inventory};
-  const input={justPressed:()=>false,consumeWheel:()=>0,mouseButtons:new Set([2])};const manager=new WeaponManager(new THREE.Group(),player,input,{},{weapon:()=>({colors:[0x343a34,0x151816]})});
+  const scopeSounds=[];const input={justPressed:()=>false,consumeWheel:()=>0,mouseButtons:new Set([2])};const manager=new WeaponManager(new THREE.Group(),player,input,{scope:(enabled)=>scopeSounds.push(enabled)},{weapon:()=>({colors:[0x343a34,0x151816]})});
   manager.handleInput({speed:0,crouched:false,grounded:true},{direction:()=>new THREE.Vector3(0,0,-1)});assert.equal(manager.scoped,true);assert.equal(manager.group.visible,false);assert.ok(manager.group.getObjectByName('scope-lens'));
+  manager.handleInput({speed:0,crouched:false,grounded:true},{direction:()=>new THREE.Vector3(0,0,-1)});input.mouseButtons.clear();manager.handleInput({speed:0,crouched:false,grounded:true},{direction:()=>new THREE.Vector3(0,0,-1)});assert.deepEqual(scopeSounds,[true,false]);
 });
 
 test('скин «Волны» создаёт анимированный чёрно-синий металлический материал',()=>{
@@ -376,4 +377,5 @@ test('подключение за бота переносит позицию, з
 test('Glock-18 использует отдельный многослойный профиль настоящего выстрела',()=>{
   const profile=shotProfile(WEAPONS.glock);
   assert.equal(profile,SHOT_PROFILES.glock);assert.ok(profile.crack.duration<profile.tail.duration);assert.ok(profile.crack.lowpass>profile.tail.lowpass);assert.ok(profile.body.frequency>profile.body.endFrequency);assert.ok(profile.slide.delay>0);assert.equal(shotProfile(WEAPONS.ak47),null);assert.equal(SHOT_SAMPLES.glock.path,'audio/glock-shot.mp3');assert.ok(SHOT_SAMPLES.glock.duration<.7);
+  assert.deepEqual(Object.keys(SHOT_SAMPLES).sort(),['awp','deagle','glock','m4a1','usp']);assert.ok(SHOT_SAMPLES.m4a1.duration<.25);assert.ok(SHOT_SAMPLES.awp.duration>SHOT_SAMPLES.m4a1.duration);
 });
