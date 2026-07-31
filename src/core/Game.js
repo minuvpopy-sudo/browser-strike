@@ -17,6 +17,7 @@ import { Firearm } from '../weapons/Firearm.js';
 import { WEAPONS, EQUIPMENT, GRENADES } from '../weapons/WeaponDefinitions.js';
 import { GrenadeSystem } from '../weapons/GrenadeSystem.js';
 import { hitDamage } from '../config/MatchRules.js';
+import { applyDamageSafely, selectMeleeTarget } from './CombatResolver.js';
 import { BotManager } from '../bots/BotManager.js';
 import { RoundManager } from '../modes/RoundManager.js';
 import { BombDefusalMode } from '../modes/BombDefusalMode.js';
@@ -51,31 +52,59 @@ export class Game extends EventTarget {
       const ray = new THREE.Raycaster(this.camera.position, direction, .05, weapon.definition.range);
       const hit = ray.intersectObjects([...this.map.raycastTargets, ...this.botManager.targets()], true)[0];
       if (!hit) continue;
-      const entity = hit.object.userData.entity;
+      const entity = hit.object?.userData?.entity;
       if (!entity) {
-        const normal = hit.face?.normal.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0, 1, 0);
-        this.impacts.spawn(hit.point, normal, hit.object.userData.surface);
+        const normal = hit.face?.normal?.clone?.() || new THREE.Vector3(0, 1, 0);
+        normal.transformDirection(hit.object.matrixWorld);
+        this.safeEffect('след пули', () => this.impacts.spawn(hit.point, normal, hit.object.userData.surface));
         continue;
       }
       if (entity.team === this.player.team && !this.settings.values.friendlyFire) {
         const now = performance.now();
         if (!this.friendlyNoticeAt || now - this.friendlyNoticeAt > 2200) {
           this.friendlyNoticeAt = now;
-          this.hud.message('Это союзник — дружественный огонь выключен');
+          this.safeEffect('сообщение о союзнике', () => this.hud.message('Это союзник — дружественный огонь выключен'));
         }
         continue;
       }
       const zone = hit.object.userData.zone || 'chest';
       const damage = hitDamage(weapon.definition.damage, zone, hit.distance, weapon.definition.range, entity.armor, entity.helmet);
-      const died = entity.takeDamage(damage, this.player);
-      this.hud.hit(died);
-      this.audio.tone('hit', { frequency: died ? 880 : 620, gain: .025, duration: .035 });
-      this.blood.spawn(hit.point);
+      const { applied, died } = applyDamageSafely(entity, damage, this.player);
+      if (!applied) continue;
+      this.safeEffect('метка попадания', () => this.hud.hit(died));
+      this.safeEffect('звук попадания', () => this.audio.tone('hit', { frequency: died ? 880 : 620, gain: .025, duration: .035 }));
+      this.safeEffect('кровь', () => this.blood.spawn(hit.point));
       if (died) this.handleKill(this.player, entity, weapon.definition.name);
     }
   }
-  handleMelee({damage,range,direction}){const enemies=this.botManager.bots.filter(b=>b.alive&&(b.team!==this.player.team||this.settings.values.friendlyFire));let best=null,dist=range;for(const bot of enemies){const delta=bot.position.clone().sub(this.player.position);const d=delta.length();if(d<dist&&delta.normalize().dot(direction)>.65&&!this.collision.segmentBlocked(this.player.position,bot.position)){dist=d;best=bot;}}if(best){const died=best.takeDamage(damage,this.player);this.hud.hit(died);this.blood.spawn(best.position.clone().setY(1.1));if(died)this.handleKill(this.player,best,'Нож');}}
-  handleKill(killer,victim,weapon){if(!killer||!victim)return;this.hud.kill(killer,victim,weapon);if(this.modeId==='tdm')this.mode.onKill(killer,victim);if(victim===this.player)this.onPlayerDeath();}
+  handleMelee({damage,range,direction}) {
+    const targets = this.botManager.bots.filter((bot) => bot.alive && (bot.team !== this.player.team || this.settings.values.friendlyFire));
+    const target = selectMeleeTarget({
+      origin: this.camera.position,
+      direction,
+      targets,
+      range,
+      isBlocked: (from, to) => this.collision.segmentBlocked(from, to, 2.2)
+    });
+    if (!target) return;
+    const { applied, died } = applyDamageSafely(target, damage, this.player);
+    if (!applied) return;
+    this.safeEffect('метка удара', () => this.hud.hit(died));
+    this.safeEffect('кровь', () => this.blood.spawn(target.position.clone().setY(1.1)));
+    if (died) this.handleKill(this.player, target, 'Нож');
+  }
+  safeEffect(label, callback) {
+    try {
+      callback();
+    } catch (error) {
+      this.effectWarnings ??= new Set();
+      if (!this.effectWarnings.has(label)) {
+        this.effectWarnings.add(label);
+        console.warn(`Отключён эффект: ${label}`, error);
+      }
+    }
+  }
+  handleKill(killer,victim,weapon){if(!killer||!victim)return;this.safeEffect('лента убийств',()=>this.hud.kill(killer,victim,weapon));if(this.modeId==='tdm')this.mode.onKill(killer,victim);if(victim===this.player)this.onPlayerDeath();}
   onPlayerDeath(){document.getElementById('death-screen').classList.add('visible');this.input.enabled=false;this.leaving=true;this.input.unlock();this.leaving=false;if(this.modeId==='tdm')this.mode.respawns.set(this.player,3);}
   spawnEntity(entity){if(entity===this.player){this.player.inventory=new PlayerInventory(this.player.team,this.skinManager.knife);this.player.spawn(randomSpawn(this.player.team));this.weaponManager.rebuild();document.getElementById('death-screen').classList.remove('visible');document.getElementById('click-to-play').classList.add('visible');}else entity.spawn(randomSpawn(entity.team));}
   openBuy(){if(this.rounds&&this.rounds.state!=='live')return;const context=this.buyContext();if(!context.inBuyZone||context.buyTime<=0){this.hud.message(context.buyTime<=0?'Время покупки закончилось':'Покупка только в стартовой зоне','error');return;}this.modalOpen=true;this.input.enabled=false;this.input.unlock();this.buyMenu.open(context);}

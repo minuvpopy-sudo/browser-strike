@@ -25,7 +25,7 @@ export const WEAPONS = Object.freeze({
   g3sg1:W('g3sg1','G3SG1','rifles',5000,'attackers',80,3.8,20,90,4.2,.014,1.4,.78,230,'semi',{scope:true}),
   sg550:W('sg550','SG550','rifles',4200,'defenders',74,4.1,30,90,4.5,.014,1.3,.79,225,'semi',{scope:true}),
   m249:W('m249','M249','machineguns',5750,'both',32,10.5,100,200,4.7,.048,1.05,.76,145),
-  knife:Object.freeze({id:'knife',name:'Нож',category:'knives',cost:0,side:'both',damage:34,heavyDamage:68,rate:1.6,range:2.1,moveSpeed:1.1,mode:'melee'})
+  knife:Object.freeze({id:'knife',name:'Нож',category:'knives',cost:0,side:'both',damage:55,heavyDamage:110,rate:1.6,range:2.8,moveSpeed:1.1,mode:'melee'})
 });
 
 export const EQUIPMENT = Object.freeze({

@@ -16,6 +16,8 @@ import { BOT_FRONTLINE_SPAWNS } from '../src/bots/BotManager.js';
 import { Player } from '../src/player/Player.js';
 import { Bot } from '../src/bots/Bot.js';
 import { BombDefusalMode } from '../src/modes/BombDefusalMode.js';
+import { BuyMenu } from '../src/ui/BuyMenu.js';
+import { applyDamageSafely, selectMeleeTarget } from '../src/core/CombatResolver.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -126,4 +128,30 @@ test('бот после реакции расходует патрон и соз
   const target={alive:true,position:new THREE.Vector3(12,0,0),armor:0,helmet:false,takeDamage(){return false;}};
   const combat=new BotCombat(bot,'expert',null);combat.update(.2,target,true);
   assert.equal(bot.ammo,29);assert.ok(bot.flashTime>0);
+});
+
+test('меню покупки не пересоздаёт кнопки каждый кадр',()=>{
+  const menu=Object.create(BuyMenu.prototype);let renders=0,statusUpdates=0;
+  menu.root={classList:{contains:()=>true}};menu.category='rifles';menu.itemsKey='';
+  menu.updateStatus=()=>{statusUpdates++;};menu.renderItems=()=>{const key=`${menu.category}|${menu.context.player.money}|${menu.context.player.team}|${menu.context.inBuyZone}|${menu.context.buyTime>0}`;if(menu.itemsKey===key)return;menu.itemsKey=key;renders++;};
+  const player={money:5000,team:'attackers'};
+  menu.update({player,inBuyZone:true,buyTime:25});
+  menu.update({player,inBuyZone:true,buyTime:24.98});
+  assert.equal(statusUpdates,2);assert.equal(renders,1);
+  player.money-=2500;menu.update({player,inBuyZone:true,buyTime:24.9});assert.equal(renders,2);
+});
+
+test('удар ножом попадает в цель перед игроком и не выбирает цель за стеной',()=>{
+  const origin=new THREE.Vector3(0,1.6,0),direction=new THREE.Vector3(0,0,-1);
+  const close={alive:true,position:new THREE.Vector3(.45,0,-2.4)};
+  const behind={alive:true,position:new THREE.Vector3(0,0,1)};
+  assert.equal(selectMeleeTarget({origin,direction,targets:[behind,close],range:2.8}),close);
+  assert.equal(selectMeleeTarget({origin,direction,targets:[close],range:2.8,isBlocked:()=>true}),null);
+});
+
+test('некорректная цель попадания не останавливает игру исключением',()=>{
+  let reported=false;
+  const result=applyDamageSafely({alive:true,takeDamage(){throw new Error('bad target');}},35,{},()=>{reported=true;});
+  assert.deepEqual(result,{applied:false,died:false});assert.equal(reported,true);
+  assert.deepEqual(applyDamageSafely({alive:true},35,{}),{applied:false,died:false});
 });
