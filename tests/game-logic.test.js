@@ -93,6 +93,16 @@ test('передового врага может ранить игрок, но �
   bot.takeDamage(40,{isPlayer:true});assert.equal(bot.health,COMBAT.maxHealth-40);bot.dispose();
 });
 
+test('все боты, включая передового, закупают оружие и снаряжение при появлении',()=>{
+  const scene=new THREE.Scene();
+  const attacker=new Bot('Штурм','attackers',scene,0);attacker.playerTarget=true;attacker.spawn({x:0,z:0});
+  assert.equal(attacker.weapon,WEAPONS.deagle);assert.equal(attacker.money,150);assert.equal(attacker.ammo,WEAPONS.deagle.mag);
+  const defender=new Bot('Опора','defenders',scene,1);defender.money=3400;defender.spawn({x:0,z:0});
+  assert.equal(defender.weapon,WEAPONS.famas);assert.equal(defender.defuseKit,true);assert.equal(defender.armor,100);
+  assert.ok(defender.group.getObjectByName('weapon').scale.z>1);
+  attacker.dispose();defender.dispose();
+});
+
 test('бот-террорист получает бомбу и устанавливает её даже в состоянии атаки',()=>{
   const carrier={team:'attackers',alive:true,isPlayer:false,hasBomb:false,state:'attack',position:new THREE.Vector3(),addMoney(){}};
   const player={team:'attackers',alive:true,isPlayer:true,inventory:{slots:{bomb:false}},position:new THREE.Vector3()};
@@ -194,8 +204,10 @@ test('классическая модель AK имеет приклад, маг
 test('керамбит имеет кольцо, изогнутый клинок и многоосевую анимацию осмотра',()=>{
   const knife=new Knife(WEAPONS.knife,'karambit','classic');const player={alive:true,velocity:new THREE.Vector3(),inventory:{active:knife}};const camera=new THREE.Group();
   const manager=new WeaponManager(camera,player,{}, {}, {knifeStyle:()=>({blade:0xcccccc,handle:0x222222})});
-  const pivot=manager.group.getObjectByName('karambit-pivot');
-  assert.ok(pivot);assert.ok(manager.group.getObjectByName('karambit-ring'));assert.ok(manager.group.getObjectByName('karambit-blade'));
+  const pivot=manager.group.getObjectByName('karambit-pivot');const ring=manager.group.getObjectByName('karambit-ring');const blade=manager.group.getObjectByName('karambit-blade');
+  assert.ok(pivot);assert.ok(ring);assert.ok(blade);assert.ok(manager.group.getObjectByName('karambit-handle'));assert.ok(manager.group.getObjectByName('karambit-edge'));
+  blade.geometry.computeBoundingBox();const bladeSize=new THREE.Vector3();blade.geometry.boundingBox.getSize(bladeSize);
+  assert.ok(bladeSize.y>1.45);assert.ok(bladeSize.x>.8);assert.ok(ring.geometry.parameters.radius>=.2);assert.ok(Math.abs(ring.rotation.x-Math.PI/2)<.001);assert.ok(pivot.position.z>.9);
   manager.drawTime=0;knife.inspecting=2;manager.update(.08);
   assert.notEqual(pivot.rotation.y,0);assert.notEqual(manager.group.rotation.z,manager.group.userData.baseRotation.z);
 });

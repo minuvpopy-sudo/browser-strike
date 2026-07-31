@@ -56,24 +56,58 @@ export class SkinPreview {
     const style = KNIFE_SKINS[this.skin] || KNIFE_SKINS.classic;
     const bladeMaterial = new THREE.MeshStandardMaterial({ color: style.blade, metalness: .82, roughness: .25, flatShading: true });
     const gripMaterial = new THREE.MeshStandardMaterial({ color: style.handle, metalness: .28, roughness: .64, flatShading: true });
+    const detailMaterial = new THREE.MeshStandardMaterial({ color: 0xb3a371, metalness: .82, roughness: .24, flatShading: true });
 
     if (this.type === 'karambit') {
       const bladeShape = new THREE.Shape();
-      bladeShape.moveTo(-.05, -.12);
-      bladeShape.quadraticCurveTo(1.15, -.62, 2.25, .2);
-      bladeShape.quadraticCurveTo(1.55, .08, .72, .48);
-      bladeShape.lineTo(.02, .42);
+      bladeShape.moveTo(-.12, -.02);
+      bladeShape.bezierCurveTo(.42, -.24, .72, -.82, 1.72, -.95);
+      bladeShape.bezierCurveTo(2.04, -.98, 2.31, -.79, 2.48, -.57);
+      bladeShape.bezierCurveTo(2.16, -.59, 1.9, -.47, 1.63, -.25);
+      bladeShape.bezierCurveTo(1.28, .04, .85, .34, .22, .48);
+      bladeShape.lineTo(-.1, .36);
       bladeShape.closePath();
-      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .09, bevelEnabled: true, bevelThickness: .035, bevelSize: .025, bevelSegments: 1 }), bladeMaterial);
+      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .1, curveSegments: 12, bevelEnabled: true, bevelThickness: .03, bevelSize: .022, bevelSegments: 2 }), bladeMaterial);
+      blade.name = 'karambit-preview-blade';
       this.group.add(blade);
-      const handle = new THREE.Mesh(new THREE.BoxGeometry(1.55, .5, .28, 1, 1, 1), gripMaterial);
-      handle.position.set(-.8, .17, .04);
-      handle.rotation.z = -.08;
+
+      const handleShape = new THREE.Shape();
+      handleShape.moveTo(-.08, -.08);
+      handleShape.quadraticCurveTo(-.76, -.28, -1.5, -.1);
+      handleShape.quadraticCurveTo(-1.66, .13, -1.48, .42);
+      handleShape.quadraticCurveTo(-.75, .62, -.1, .42);
+      handleShape.lineTo(.04, .25);
+      handleShape.lineTo(.02, .05);
+      handleShape.closePath();
+      const handle = new THREE.Mesh(new THREE.ExtrudeGeometry(handleShape, { depth: .24, curveSegments: 8, bevelEnabled: true, bevelThickness: .028, bevelSize: .022, bevelSegments: 2 }), gripMaterial);
+      handle.name = 'karambit-preview-handle';
+      handle.position.z = -.07;
       this.group.add(handle);
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(.28, .085, 7, 18), gripMaterial);
-      ring.position.set(-1.7, .2, .04);
+
+      const inlay = new THREE.Mesh(new THREE.BoxGeometry(1.05, .16, .12), new THREE.MeshStandardMaterial({ color: new THREE.Color(style.handle).multiplyScalar(.5), metalness: .1, roughness: .85, flatShading: true }));
+      inlay.position.set(-.78, .17, .18);
+      inlay.rotation.z = -.02;
+      this.group.add(inlay);
+
+      for (const x of [-.38, -.8, -1.2]) {
+        const pin = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, .3, 10), detailMaterial);
+        pin.rotation.x = Math.PI / 2;
+        pin.position.set(x, .17, .05);
+        this.group.add(pin);
+      }
+
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(.31, .09, 9, 28), gripMaterial);
+      ring.position.set(-1.72, .15, .05);
       ring.name = 'karambit-preview-ring';
       this.group.add(ring);
+      const ringLiner = new THREE.Mesh(new THREE.TorusGeometry(.215, .025, 7, 24), detailMaterial);
+      ringLiner.position.copy(ring.position);
+      this.group.add(ringLiner);
+
+      const guard = new THREE.Mesh(new THREE.BoxGeometry(.17, .78, .2), detailMaterial);
+      guard.position.set(-.02, .17, .03);
+      guard.rotation.z = -.12;
+      this.group.add(guard);
     } else {
       const bladeShape = new THREE.Shape();
       bladeShape.moveTo(-.18, -.15);
@@ -101,7 +135,7 @@ export class SkinPreview {
         this.group.add(handle);
       }
     }
-    this.group.rotation.set(.25, -.45, -.12);
+    this.group.rotation.set(this.type === 'karambit' ? .18 : .25, this.type === 'karambit' ? -.34 : -.45, this.type === 'karambit' ? -.06 : -.12);
   }
 
   inspect() { this.inspectLeft = this.type === 'karambit' ? 2.2 : 1.5; }
@@ -118,17 +152,19 @@ export class SkinPreview {
       const progress = 1 - this.inspectLeft / duration;
       if (this.type === 'karambit') {
         const flourish = Math.sin(progress * Math.PI);
-        this.group.rotation.x = .25 + Math.sin(progress * Math.PI * 4) * .42 * flourish;
-        this.group.rotation.y = -.45 + progress * Math.PI * 4;
-        this.group.rotation.z = -.12 + Math.sin(progress * Math.PI * 2) * 1.15 * flourish;
+        this.group.rotation.x = .18 + Math.sin(progress * Math.PI * 4) * .42 * flourish;
+        this.group.rotation.y = -.34 + progress * Math.PI * 4;
+        this.group.rotation.z = -.06 + Math.sin(progress * Math.PI * 2) * 1.15 * flourish;
       } else {
         this.group.rotation.y = -.45 + progress * Math.PI * 2;
         this.group.rotation.z = -.12 + Math.sin(progress * Math.PI) * .35;
       }
       this.inspectLeft = Math.max(0, this.inspectLeft - dt);
     } else {
-      this.group.rotation.x = THREE.MathUtils.lerp(this.group.rotation.x, .25, Math.min(1, dt * 5));
-      this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, -.12, Math.min(1, dt * 5));
+      const idleX = this.type === 'karambit' ? .18 : .25;
+      const idleZ = this.type === 'karambit' ? -.06 : -.12;
+      this.group.rotation.x = THREE.MathUtils.lerp(this.group.rotation.x, idleX, Math.min(1, dt * 5));
+      this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, idleZ, Math.min(1, dt * 5));
       this.group.rotation.y += dt * .38;
     }
     this.renderer.render(this.scene, this.camera);

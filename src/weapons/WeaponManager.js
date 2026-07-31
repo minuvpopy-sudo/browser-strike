@@ -376,37 +376,81 @@ export class WeaponManager extends EventTarget {
     if (knife.variant === 'karambit') {
       const pivot = new THREE.Group();
       pivot.name = 'karambit-pivot';
+      pivot.position.z = .95;
       this.group.add(pivot);
+
+      const model = new THREE.Group();
+      model.name = 'karambit-model';
+      model.position.z = -.95;
+      pivot.add(model);
+
       const bladeShape = new THREE.Shape();
-      bladeShape.moveTo(-.11, .03);
-      bladeShape.quadraticCurveTo(-.38, -.42, -.19, -.82);
-      bladeShape.quadraticCurveTo(.01, -1.18, .24, -.92);
-      bladeShape.quadraticCurveTo(.02, -.72, .06, -.23);
-      bladeShape.lineTo(.13, .03);
+      bladeShape.moveTo(-.16, .04);
+      bladeShape.bezierCurveTo(-.48, -.18, -.68, -.6, -.56, -.98);
+      bladeShape.bezierCurveTo(-.46, -1.28, -.12, -1.5, .36, -1.55);
+      bladeShape.bezierCurveTo(.26, -1.37, .14, -1.18, -.02, -.98);
+      bladeShape.bezierCurveTo(.17, -.77, .28, -.46, .18, -.18);
+      bladeShape.lineTo(.14, .04);
       bladeShape.closePath();
-      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .055, bevelEnabled: true, bevelThickness: .02, bevelSize: .014, bevelSegments: 1 }), bladeMaterial);
+      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .07, curveSegments: 10, bevelEnabled: true, bevelThickness: .018, bevelSize: .014, bevelSegments: 2 }), bladeMaterial);
       blade.name = 'karambit-blade';
       blade.rotation.x = Math.PI / 2;
-      blade.position.set(0, .02, -.04);
-      pivot.add(blade);
+      blade.position.set(0, .035, -.04);
+      model.add(blade);
 
-      const handle = new THREE.Mesh(new THREE.BoxGeometry(.28, .18, .82), gripMaterial);
+      const edgeCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(.14, .075, -.16), new THREE.Vector3(.23, .075, -.46),
+        new THREE.Vector3(.1, .075, -.8), new THREE.Vector3(-.02, .075, -.98),
+        new THREE.Vector3(.18, .075, -1.34), new THREE.Vector3(.35, .075, -1.53)
+      ]);
+      const edge = new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 22, .014, 5, false), pinMaterial);
+      edge.name = 'karambit-edge';
+      model.add(edge);
+
+      const handleShape = new THREE.Shape();
+      handleShape.moveTo(-.17, -.02);
+      handleShape.quadraticCurveTo(-.25, .18, -.2, .35);
+      handleShape.quadraticCurveTo(-.27, .6, -.15, .9);
+      handleShape.lineTo(.15, .9);
+      handleShape.quadraticCurveTo(.27, .69, .19, .48);
+      handleShape.quadraticCurveTo(.27, .24, .16, -.02);
+      handleShape.closePath();
+      const handle = new THREE.Mesh(new THREE.ExtrudeGeometry(handleShape, { depth: .16, curveSegments: 7, bevelEnabled: true, bevelThickness: .018, bevelSize: .014, bevelSegments: 1 }), gripMaterial);
       handle.name = 'karambit-handle';
-      handle.position.set(0, 0, .45);
-      handle.rotation.x = .08;
-      pivot.add(handle);
-      for (const z of [.18, .42, .66]) {
-        const grip = new THREE.Mesh(new THREE.BoxGeometry(.3, .195, .055), pinMaterial);
-        grip.position.z = z;
-        pivot.add(grip);
+      handle.rotation.x = Math.PI / 2;
+      handle.position.y = .08;
+      model.add(handle);
+
+      const inlayMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(style.handle).multiplyScalar(.5), metalness: .12, roughness: .82, flatShading: true });
+      for (const y of [-.092, .092]) {
+        const inlay = new THREE.Mesh(new THREE.BoxGeometry(.22, .018, .55), inlayMaterial);
+        inlay.name = 'karambit-grip-inlay';
+        inlay.position.set(0, y, .48);
+        inlay.rotation.x = -.04;
+        model.add(inlay);
       }
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(.16, .045, 7, 18), gripMaterial);
+
+      for (const z of [.2, .5, .75]) {
+        const pin = new THREE.Mesh(new THREE.CylinderGeometry(.031, .031, .205, 10), pinMaterial);
+        pin.name = 'karambit-handle-pin';
+        pin.position.z = z;
+        model.add(pin);
+      }
+
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(.205, .052, 9, 26), gripMaterial);
       ring.name = 'karambit-ring';
-      ring.position.set(0, 0, .91);
+      ring.rotation.x = Math.PI / 2;
       pivot.add(ring);
-      const guard = new THREE.Mesh(new THREE.BoxGeometry(.43, .11, .12), pinMaterial);
+
+      const ringLiner = new THREE.Mesh(new THREE.TorusGeometry(.145, .018, 6, 24), pinMaterial);
+      ringLiner.name = 'karambit-ring-liner';
+      ringLiner.rotation.x = Math.PI / 2;
+      pivot.add(ringLiner);
+
+      const guard = new THREE.Mesh(new THREE.BoxGeometry(.48, .13, .12), pinMaterial);
+      guard.name = 'karambit-guard';
       guard.position.z = .04;
-      pivot.add(guard);
+      model.add(guard);
     } else {
       const bladeShape = new THREE.Shape();
       bladeShape.moveTo(-.1, 0);
@@ -454,12 +498,12 @@ export class WeaponManager extends EventTarget {
     }
 
     const baseRotation = knife.variant === 'karambit'
-      ? new THREE.Euler(.96, .28, -.22, 'YXZ')
+      ? new THREE.Euler(.9, .2, -.12, 'YXZ')
       : new THREE.Euler(1.02, .2, -.1, 'YXZ');
     this.group.userData.baseRotation = baseRotation;
     this.group.rotation.copy(baseRotation);
-    this.group.position.set(.4, knife.variant === 'karambit' ? -.36 : -.4, knife.variant === 'karambit' ? -1.08 : -1);
-    this.group.scale.setScalar(knife.variant === 'karambit' ? .74 : .68);
+    this.group.position.set(.4, knife.variant === 'karambit' ? -.39 : -.4, knife.variant === 'karambit' ? -1.28 : -1);
+    this.group.scale.setScalar(knife.variant === 'karambit' ? .58 : .68);
   }
 
   dispatch(type) {

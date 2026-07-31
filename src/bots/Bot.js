@@ -6,7 +6,7 @@ export class Bot {
   constructor(name, team, scene, index = 0) {
     this.name = name; this.team = team; this.scene = scene; this.index = index;
     this.position = new THREE.Vector3(); this.velocity = new THREE.Vector3();
-    this.maxHealth = COMBAT.maxHealth; this.health = this.maxHealth; this.armor = 0; this.money = ECONOMY.startMoney; this.alive = true;
+    this.maxHealth = COMBAT.maxHealth; this.health = this.maxHealth; this.armor = 0; this.helmet = false; this.money = ECONOMY.startMoney; this.alive = true;
     this.kills = 0; this.deaths = 0; this.assists = 0; this.state = 'spawn';
     this.weapon = WEAPONS[team === 'attackers' ? 'glock' : 'usp'];
     this.ammo = this.weapon.mag; this.reserve = this.weapon.reserve; this.reloadTime = 0;
@@ -37,8 +37,10 @@ export class Bot {
 
   spawn(point) {
     this.position.set(point.x, 0, point.z); this.group.position.copy(this.position); this.group.visible = true;
-    this.health = this.maxHealth; this.armor = 0; this.alive = true; this.state = 'buy'; this.hasBomb = false; this.bombSite = null;
-    this.reloadTime = 0; this.flashTime = 0; this.ammo = this.weapon.mag; this.spawnProtectedUntil = performance.now() + 2500;
+    this.health = this.maxHealth; this.armor = 0; this.helmet = false; this.alive = true; this.state = 'buy'; this.hasBomb = false; this.bombSite = null; this.defuseKit = false;
+    this.weapon = WEAPONS[this.team === 'attackers' ? 'glock' : 'usp'];
+    this.reloadTime = 0; this.flashTime = 0; this.ammo = this.weapon.mag; this.reserve = this.weapon.reserve; this.spawnProtectedUntil = performance.now() + 2500;
+    this.buy();
   }
 
   takeDamage(amount, source) {
@@ -52,16 +54,35 @@ export class Bot {
   }
 
   buy() {
-    if (this.playerTarget) { this.state = 'move-to-target'; return; }
+    const purchased = [];
     const choices = this.team === 'attackers' ? ['ak47', 'galil', 'mp5', 'deagle'] : ['m4a1', 'famas', 'mp5', 'deagle'];
+    const equipmentReserve = this.money >= 1650 ? (this.team === 'defenders' ? 1050 : 650) : 0;
     for (const id of choices) {
       const definition = WEAPONS[id];
-      if (this.money >= definition.cost) {
-        this.money -= definition.cost; this.weapon = definition; this.ammo = definition.mag; this.reserve = definition.reserve; break;
+      if (this.money - equipmentReserve >= definition.cost) {
+        this.money -= definition.cost; this.weapon = definition; this.ammo = definition.mag; this.reserve = definition.reserve; purchased.push(id); break;
       }
     }
-    if (this.money >= 650) { this.money -= 650; this.armor = 100; }
+    if (this.team === 'defenders' && this.money >= 400) {
+      this.money -= 400; this.defuseKit = true; purchased.push('defuse');
+    }
+    if (this.money >= 1000) {
+      this.money -= 1000; this.armor = 100; this.helmet = true; purchased.push('helmet');
+    } else if (this.money >= 650) {
+      this.money -= 650; this.armor = 100; purchased.push('kevlar');
+    }
+    this.updateWeaponModel();
     this.state = 'move-to-target';
+    return purchased;
+  }
+
+  updateWeaponModel() {
+    const model = this.group.getObjectByName('weapon');
+    if (!model) return;
+    const pistol = this.weapon.category === 'pistols';
+    const sniper = Boolean(this.weapon.scope);
+    model.scale.set(pistol ? .82 : 1, pistol ? .88 : 1, pistol ? .58 : sniper ? 1.5 : 1.22);
+    model.position.z = pistol ? .13 : .28;
   }
 
   addMoney(amount) { this.money = awardMoney(this.money, amount); }
