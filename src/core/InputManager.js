@@ -19,7 +19,7 @@ export class InputManager extends EventTarget {
   attach() {
     if (this.listening) return;
     this.listening = true;
-    for (const type of ['keydown','keyup']) window.addEventListener(type, this.handlers[type]);
+    for (const type of ['keydown','keyup']) window.addEventListener(type, this.handlers[type], { capture: true });
     for (const type of ['mousedown','mouseup','mousemove','wheel','contextmenu']) this.element.addEventListener(type, this.handlers[type], { passive: type === 'wheel' });
     window.addEventListener('blur', this.handlers.blur);
     document.addEventListener('pointerlockchange', this.handlers.pointerlockchange);
@@ -27,14 +27,25 @@ export class InputManager extends EventTarget {
   detach() {
     if (!this.listening) return;
     this.listening = false;
-    for (const type of ['keydown','keyup']) window.removeEventListener(type, this.handlers[type]);
+    for (const type of ['keydown','keyup']) window.removeEventListener(type, this.handlers[type], true);
     for (const type of ['mousedown','mouseup','mousemove','wheel','contextmenu']) this.element.removeEventListener(type, this.handlers[type]);
     window.removeEventListener('blur', this.handlers.blur);
     document.removeEventListener('pointerlockchange', this.handlers.pointerlockchange);
     this.clear();
   }
-  onKeyDown(e) { if (!this.enabled) return; if (!this.keys.has(e.code)) this.pressed.add(e.code); this.keys.add(e.code); if (['Tab','Space'].includes(e.code)) e.preventDefault(); }
-  onKeyUp(e) { this.keys.delete(e.code); }
+  normalizedCode(code) {
+    if (code === 'ControlRight' && this.settings.values.keys.crouch === 'ControlLeft') return 'ControlLeft';
+    return code;
+  }
+  onKeyDown(e) {
+    if (!this.enabled) return;
+    const code = this.normalizedCode(e.code);
+    const gameplayKeys = Object.values(this.settings.values.keys);
+    if (gameplayKeys.includes(code) || e.ctrlKey || code.startsWith('Control')) e.preventDefault();
+    if (!this.keys.has(code)) this.pressed.add(code);
+    this.keys.add(code);
+  }
+  onKeyUp(e) { this.keys.delete(this.normalizedCode(e.code)); }
   onMouseDown(e) { if (this.enabled) this.mouseButtons.add(e.button); }
   onMouseUp(e) { this.mouseButtons.delete(e.button); }
   onMouseMove(e) { if (this.enabled && document.pointerLockElement === this.element) { this.lookX += e.movementX; this.lookY += e.movementY; } }

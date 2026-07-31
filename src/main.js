@@ -8,6 +8,7 @@ import { TeamSelectMenu } from './ui/TeamSelectMenu.js';
 import { KnifeMenu } from './ui/KnifeMenu.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
 import { Game } from './core/Game.js';
+import { KNIFE_TYPES } from './skins/KnifeSkinDefinitions.js';
 
 const settings=new SettingsManager();
 const save=new SaveManager();
@@ -16,7 +17,7 @@ const skinManager=new SkinManager(save);
 const mainMenu=new MainMenu(audio);
 const teamMenu=new TeamSelectMenu(save);
 const knifeMenu=new KnifeMenu(skinManager);
-document.getElementById('knife-label').textContent=skinManager.knife.type==='butterfly'?'Нож-бабочка':'Стандартный';
+document.getElementById('knife-label').textContent=KNIFE_TYPES[skinManager.knife.type]||KNIFE_TYPES.standard;
 const settingsMenu=new SettingsMenu(settings);
 let mode=save.get('mode','bomb');
 

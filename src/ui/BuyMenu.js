@@ -83,11 +83,20 @@ export class BuyMenu extends EventTarget {
       button.type = 'button';
       button.className = `buy-item${allowed ? '' : ' disabled'}`;
       button.innerHTML = `<strong>${item.name}</strong><small>${item.damage ? `Урон ${item.damage} · Магазин ${item.mag}` : item.category === 'grenades' ? 'Одноразовое снаряжение' : 'Защита и боезапас'}</small><span class="price">$${item.cost}</span>${!available ? '<small>Недоступно стороне</small>' : this.context.player.money < item.cost ? '<small>Недостаточно денег</small>' : ''}`;
-      button.addEventListener('click', () => {
-        this.dispatchEvent(new CustomEvent(allowed ? 'buy' : 'denied', { detail: item }));
+      button.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        this.activate(item, allowed);
+      });
+      button.addEventListener('click', (event) => {
+        if (event.detail === 0) this.activate(item, allowed);
       });
       this.items.append(button);
     }
+  }
+
+  activate(item, allowed) {
+    this.dispatchEvent(new CustomEvent(allowed ? 'buy' : 'denied', { detail: item }));
   }
 
   update(context) {

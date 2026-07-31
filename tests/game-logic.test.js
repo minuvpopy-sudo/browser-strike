@@ -18,6 +18,8 @@ import { Bot } from '../src/bots/Bot.js';
 import { BombDefusalMode } from '../src/modes/BombDefusalMode.js';
 import { BuyMenu } from '../src/ui/BuyMenu.js';
 import { applyDamageSafely, selectMeleeTarget } from '../src/core/CombatResolver.js';
+import { InputManager } from '../src/core/InputManager.js';
+import { GameLoop } from '../src/core/GameLoop.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -154,4 +156,46 @@ test('некорректная цель попадания не останавл
   const result=applyDamageSafely({alive:true,takeDamage(){throw new Error('bad target');}},35,{},()=>{reported=true;});
   assert.deepEqual(result,{applied:false,died:false});assert.equal(reported,true);
   assert.deepEqual(applyDamageSafely({alive:true},35,{}),{applied:false,died:false});
+});
+
+test('Ctrl и сочетания с ним перехватываются игрой без команды браузеру',()=>{
+  const settings={values:{keys:{crouch:'ControlLeft',forward:'KeyW'}}};
+  const input=new InputManager({},settings);input.enabled=true;let prevented=0;
+  input.onKeyDown({code:'ControlRight',ctrlKey:true,preventDefault(){prevented++;}});
+  input.onKeyDown({code:'KeyW',ctrlKey:true,preventDefault(){prevented++;}});
+  assert.equal(input.action('crouch'),true);assert.equal(input.action('forward'),true);assert.equal(prevented,2);
+  input.onKeyUp({code:'ControlRight'});assert.equal(input.action('crouch'),false);
+});
+
+test('игровой цикл продолжает следующий кадр после единичной ошибки',()=>{
+  const original=globalThis.requestAnimationFrame;let reported=false;
+  globalThis.requestAnimationFrame=()=>77;
+  try{
+    const loop=new GameLoop(()=>{throw new Error('frame');},()=>{},1/60,()=>{reported=true;});
+    loop.running=true;loop.last=0;loop.tick(20);
+    assert.equal(reported,true);assert.equal(loop.frame,77);assert.equal(loop.accumulator,0);
+  }finally{globalThis.requestAnimationFrame=original;}
+});
+
+test('меню покупки активирует товар одним событием',()=>{
+  const menu=Object.setPrototypeOf(new EventTarget(),BuyMenu.prototype);let item=null;
+  menu.addEventListener('buy',(event)=>{item=event.detail;});
+  menu.activate(WEAPONS.ak47,true);
+  assert.equal(item,WEAPONS.ak47);
+});
+
+test('классическая модель AK имеет приклад, магазин и угловатые материалы',()=>{
+  const gun=new Firearm(WEAPONS.ak47);const player={alive:true,velocity:new THREE.Vector3(),inventory:{active:gun}};const camera=new THREE.Group();
+  const manager=new WeaponManager(camera,player,{}, {}, {weapon:()=>({colors:[0x343a34,0x151816]})});
+  assert.ok(manager.group.getObjectByName('wood-stock'));assert.ok(manager.group.getObjectByName('magazine-lower'));
+  assert.equal(manager.group.getObjectByName('receiver').material.flatShading,true);
+});
+
+test('керамбит имеет кольцо, изогнутый клинок и многоосевую анимацию осмотра',()=>{
+  const knife=new Knife(WEAPONS.knife,'karambit','classic');const player={alive:true,velocity:new THREE.Vector3(),inventory:{active:knife}};const camera=new THREE.Group();
+  const manager=new WeaponManager(camera,player,{}, {}, {knifeStyle:()=>({blade:0xcccccc,handle:0x222222})});
+  const pivot=manager.group.getObjectByName('karambit-pivot');
+  assert.ok(pivot);assert.ok(manager.group.getObjectByName('karambit-ring'));assert.ok(manager.group.getObjectByName('karambit-blade'));
+  manager.drawTime=0;knife.inspecting=2;manager.update(.08);
+  assert.notEqual(pivot.rotation.y,0);assert.notEqual(manager.group.rotation.z,manager.group.userData.baseRotation.z);
 });

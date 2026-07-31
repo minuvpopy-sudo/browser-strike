@@ -84,21 +84,33 @@ export class WeaponManager extends EventTarget {
     const base = this.group.userData.baseRotation || new THREE.Euler(1.02, 0.2, -0.1, 'YXZ');
     const left = this.group.getObjectByName('butterfly-handle-left');
     const right = this.group.getObjectByName('butterfly-handle-right');
+    const karambitPivot = this.group.getObjectByName('karambit-pivot');
     let handleLeft = 0;
     let handleRight = 0;
     let rotX = base.x;
     let rotY = base.y;
     let rotZ = base.z;
     let thrust = 0;
+    let pivotX = 0;
+    let pivotY = 0;
+    let pivotZ = 0;
 
     if (this.drawTime > 0) {
       this.drawTime = Math.max(0, this.drawTime - dt);
-      const progress = 1 - this.drawTime / 0.88;
+      const duration = knife.variant === 'karambit' ? 1.02 : .88;
+      const progress = 1 - this.drawTime / duration;
       const eased = easeOutBack(Math.min(1, progress));
-      handleLeft = Math.PI * (1 - eased);
-      handleRight = -Math.PI * (1 - eased);
-      rotX += (1 - eased) * 0.75;
-      rotZ += (1 - eased) * 1.1;
+      if (knife.variant === 'karambit') {
+        pivotY = (1 - eased) * -Math.PI * 1.8;
+        pivotZ = (1 - eased) * Math.PI * 1.25;
+        rotX += (1 - eased) * .38;
+        thrust = (1 - eased) * .24;
+      } else {
+        handleLeft = Math.PI * (1 - eased);
+        handleRight = -Math.PI * (1 - eased);
+        rotX += (1 - eased) * .75;
+        rotZ += (1 - eased) * 1.1;
+      }
     } else if (knife.inspecting > 0 && knife.variant === 'butterfly') {
       const progress = 1 - knife.inspecting / 1.5;
       const flourish = Math.sin(progress * Math.PI);
@@ -107,20 +119,43 @@ export class WeaponManager extends EventTarget {
       rotY += progress * Math.PI * 2;
       rotZ += Math.sin(progress * Math.PI * 2) * 0.48 * flourish;
       rotX += Math.sin(progress * Math.PI * 4) * 0.18;
+    } else if (knife.inspecting > 0 && knife.variant === 'karambit') {
+      const progress = 1 - knife.inspecting / 2.2;
+      const flourish = Math.sin(progress * Math.PI);
+      pivotX = Math.sin(progress * Math.PI * 4) * .52 * flourish;
+      pivotY = progress * Math.PI * 4;
+      pivotZ = Math.sin(progress * Math.PI * 2) * 1.05 * flourish;
+      rotX += Math.sin(progress * Math.PI * 2) * .22;
+      rotY -= Math.sin(progress * Math.PI) * .45;
+      rotZ += progress * Math.PI * 2;
+      thrust = -flourish * .18;
     }
 
     if (this.knifeAction) {
       this.knifeAction.elapsed += dt;
       const progress = Math.min(1, this.knifeAction.elapsed / this.knifeAction.duration);
       const arc = Math.sin(progress * Math.PI);
-      if (this.knifeAction.heavy) {
-        rotX -= arc * 0.62;
-        rotY -= arc * 0.5;
-        thrust = arc * -0.34;
+      if (knife.variant === 'karambit') {
+        if (this.knifeAction.heavy) {
+          rotZ += arc * 1.42;
+          rotY -= arc * .72;
+          pivotY -= arc * .65;
+          thrust = arc * -.42;
+        } else {
+          rotX -= arc * .38;
+          rotY += arc * .82;
+          rotZ -= arc * .58;
+          pivotZ += arc * .45;
+          thrust = arc * -.24;
+        }
+      } else if (this.knifeAction.heavy) {
+        rotX -= arc * .62;
+        rotY -= arc * .5;
+        thrust = arc * -.34;
       } else {
         rotZ -= arc * 1.05;
-        rotY += arc * 0.32;
-        thrust = arc * -0.16;
+        rotY += arc * .32;
+        thrust = arc * -.16;
       }
       if (knife.variant === 'butterfly') {
         handleLeft += Math.sin(progress * Math.PI * 2) * 0.38;
@@ -133,6 +168,7 @@ export class WeaponManager extends EventTarget {
       left.rotation.y = handleLeft;
       right.rotation.y = handleRight;
     }
+    if (karambitPivot) karambitPivot.rotation.set(pivotX, pivotY, pivotZ, 'YXZ');
     this.group.rotation.set(rotX, rotY, rotZ, 'YXZ');
     this.group.position.z += thrust;
   }
@@ -206,100 +242,184 @@ export class WeaponManager extends EventTarget {
   }
 
   rebuild() {
-    this.group.clear();
+    this.clearModel();
     this.group.scale.setScalar(1);
     this.knifeAction = null;
     const active = this.player.inventory.active;
     if (!active) return;
     if (active instanceof Knife) this.buildKnife(active);
     else this.buildGun(active.definition);
-    this.drawTime = active instanceof Knife ? 0.88 : 0.35;
+    this.drawTime = active instanceof Knife ? (active.variant === 'karambit' ? 1.02 : .88) : .35;
     this.lastActive = active;
+  }
+
+  clearModel() {
+    for (const child of [...this.group.children]) {
+      child.traverse((object) => {
+        object.geometry?.dispose();
+        if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose());
+        else object.material?.dispose();
+      });
+      this.group.remove(child);
+    }
   }
 
   buildGun(definition) {
     const skin = this.skinManager.weapon(definition.id);
-    const metal = new THREE.MeshStandardMaterial({ color: skin.colors[0], metalness: 0.6, roughness: 0.38 });
-    const dark = new THREE.MeshStandardMaterial({ color: skin.colors[1], roughness: 0.7 });
+    const metal = new THREE.MeshStandardMaterial({ color: skin.colors[0], metalness: .52, roughness: .48, flatShading: true });
+    const dark = new THREE.MeshStandardMaterial({ color: skin.colors[1], metalness: .18, roughness: .82, flatShading: true });
+    const wood = new THREE.MeshStandardMaterial({ color: definition.id === 'ak47' ? 0x75451f : skin.colors[1], metalness: .04, roughness: .9, flatShading: true });
+    const detail = new THREE.MeshStandardMaterial({ color: 0x111412, metalness: .32, roughness: .7, flatShading: true });
     const long = ['rifles', 'machineguns'].includes(definition.category);
     const smg = definition.category === 'smgs';
     const shotgun = definition.category === 'shotguns';
-    const bodyLength = long ? 0.92 : smg || shotgun ? 0.7 : 0.5;
-    const barrelLength = long ? 0.58 : shotgun ? 0.5 : 0.32;
+    const pistol = definition.category === 'pistols';
+    const machinegun = definition.category === 'machineguns';
+    const bodyLength = long ? .92 : smg || shotgun ? .72 : .52;
+    const barrelLength = long ? .62 : shotgun ? .58 : smg ? .4 : .34;
+    const addBox = (name, size, position, material = metal, rotation = [0, 0, 0]) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+      mesh.name = name;
+      mesh.position.set(...position);
+      mesh.rotation.set(...rotation);
+      this.group.add(mesh);
+      return mesh;
+    };
+    const addCylinder = (name, radii, length, position, material = detail, rotation = [Math.PI / 2, 0, 0], segments = 8) => {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radii[0], radii[1], length, segments), material);
+      mesh.name = name;
+      mesh.position.set(...position);
+      mesh.rotation.set(...rotation);
+      this.group.add(mesh);
+      return mesh;
+    };
 
-    // Ось оружия направлена вдоль -Z: ствол смотрит туда же, куда камера.
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.2, bodyLength), metal);
-    body.position.set(0, 0, -bodyLength * 0.48);
-    this.group.add(body);
+    if (pistol) {
+      const heavy = definition.id === 'deagle';
+      addBox('receiver', [heavy ? .32 : .27, .17, bodyLength], [-.005, .04, -bodyLength * .48], metal);
+      addBox('pistol-frame', [.25, .1, bodyLength * .72], [0, -.08, -bodyLength * .38], dark);
+      addBox('grip', [.2, .42, .24], [0, -.3, -.08], dark, [-.2, 0, 0]);
+      addCylinder('barrel', [heavy ? .045 : .034, heavy ? .052 : .042], barrelLength, [0, .035, -bodyLength - barrelLength * .45]);
+      addBox('front-sight', [.045, .055, .055], [0, .165, -bodyLength * .9], detail);
+      addBox('rear-sight', [.11, .045, .045], [0, .16, -.12], detail);
+      const triggerGuard = new THREE.Mesh(new THREE.TorusGeometry(.1, .018, 4, 10, Math.PI), detail);
+      triggerGuard.name = 'trigger-guard';
+      triggerGuard.rotation.set(0, Math.PI / 2, Math.PI / 2);
+      triggerGuard.position.set(0, -.14, -.2);
+      this.group.add(triggerGuard);
+    } else {
+      addBox('receiver', [.3, .25, bodyLength], [0, .01, -bodyLength * .43], metal);
+      addBox('receiver-top', [.26, .09, bodyLength * .72], [0, .18, -bodyLength * .47], detail);
+      addCylinder('barrel', [shotgun ? .055 : .038, shotgun ? .062 : .047], barrelLength, [0, .055, -bodyLength - barrelLength * .44]);
+      addBox('pistol-grip', [.2, .4, .24], [0, -.29, -.17], dark, [-.22, 0, 0]);
 
-    const slide = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.09, bodyLength * 0.78), dark);
-    slide.position.set(0, 0.13, -bodyLength * 0.5);
-    this.group.add(slide);
+      if (definition.id === 'ak47') {
+        addBox('wood-stock', [.31, .28, .62], [0, -.01, .36], wood, [-.08, 0, 0]);
+        addBox('wood-handguard', [.31, .2, .48], [0, -.02, -bodyLength * .98], wood);
+        addBox('magazine-upper', [.22, .34, .22], [0, -.3, -.38], detail, [-.14, 0, 0]);
+        addBox('magazine-lower', [.21, .34, .2], [0, -.57, -.29], detail, [-.38, 0, 0]);
+        addCylinder('gas-tube', [.025, .025], .52, [0, .17, -1.0], detail);
+      } else {
+        const stockMaterial = ['galil', 'scout'].includes(definition.id) ? wood : dark;
+        addBox('stock', [.29, .25, smg ? .38 : .56], [0, -.01, smg ? .27 : .34], stockMaterial, [-.07, 0, 0]);
+        if (machinegun) {
+          addBox('ammo-box', [.36, .4, .34], [0, -.31, -.35], dark, [-.04, 0, 0]);
+        } else if (!shotgun) {
+          addBox('magazine', [.22, smg ? .42 : .48, .24], [0, smg ? -.33 : -.38, -.35], detail, [smg ? -.05 : -.18, 0, 0]);
+        }
+        addBox('handguard', [.3, .2, shotgun ? .62 : .48], [0, -.02, -bodyLength * .95], shotgun ? wood : dark);
+      }
 
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, barrelLength, 8), dark);
-    barrel.rotation.x = Math.PI / 2;
-    barrel.position.set(0, 0.015, -bodyLength - barrelLength * 0.45);
-    this.group.add(barrel);
+      if (shotgun) {
+        addCylinder('magazine-tube', [.035, .035], .74, [0, -.08, -1.02], detail);
+        addBox('pump', [.31, .19, .34], [0, -.08, -.84], wood);
+      }
 
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.38, 0.21), dark);
-    grip.position.set(0, -0.26, -bodyLength * 0.18);
-    grip.rotation.x = -0.2;
-    this.group.add(grip);
-
-    if (long || shotgun) {
-      const stock = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.24, 0.46), dark);
-      stock.position.set(0, -0.03, 0.19);
-      stock.rotation.x = -0.08;
-      this.group.add(stock);
-    }
-
-    if (definition.scope) {
-      const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.35, 10), dark);
-      scope.rotation.x = Math.PI / 2;
-      scope.position.set(0, 0.24, -bodyLength * 0.46);
-      this.group.add(scope);
+      if (definition.scope) {
+        addCylinder('scope', [.085, .085], .42, [0, .31, -bodyLength * .45], detail, [Math.PI / 2, 0, 0], 10);
+        addCylinder('scope-front', [.105, .105], .11, [0, .31, -bodyLength * .66], detail, [Math.PI / 2, 0, 0], 10);
+        addBox('scope-mount', [.12, .1, .24], [0, .21, -bodyLength * .44], dark);
+      } else {
+        addBox('rear-sight', [.11, .08, .08], [0, .26, -.18], detail);
+        addBox('front-sight', [.07, .11, .07], [0, .22, -bodyLength - barrelLength * .7], detail);
+      }
     }
 
     const muzzle = new THREE.PointLight(0xffc16b, 0, 3);
-    muzzle.position.set(0, 0.015, -bodyLength - barrelLength);
+    muzzle.position.set(0, .04, -bodyLength - barrelLength);
     muzzle.name = 'muzzle';
     this.group.add(muzzle);
 
-    const baseRotation = new THREE.Euler(-0.08, 0.04, 0.025, 'YXZ');
+    const baseRotation = new THREE.Euler(-.09, .04, .025, 'YXZ');
     this.group.userData.baseRotation = baseRotation;
     this.group.rotation.copy(baseRotation);
-    this.group.position.set(0.34, -0.31, -0.62);
-    this.group.scale.setScalar(long ? 0.76 : 0.84);
+    this.group.position.set(.36, -.32, -.68);
+    this.group.scale.setScalar(long ? .72 : pistol ? .86 : .78);
   }
 
   buildKnife(knife) {
     const style = this.skinManager.knifeStyle();
     const bladeMaterial = new THREE.MeshStandardMaterial({
       color: style.blade,
-      metalness: 0.88,
-      roughness: 0.22
+      metalness: .88,
+      roughness: .22,
+      flatShading: true
     });
     const gripMaterial = new THREE.MeshStandardMaterial({
       color: style.handle,
-      metalness: 0.32,
-      roughness: 0.64
+      metalness: .32,
+      roughness: .64,
+      flatShading: true
     });
-    const pinMaterial = new THREE.MeshStandardMaterial({ color: 0xb3a371, metalness: 0.82, roughness: 0.24 });
+    const pinMaterial = new THREE.MeshStandardMaterial({ color: 0xb3a371, metalness: .82, roughness: .24, flatShading: true });
 
-    const bladeShape = new THREE.Shape();
-    bladeShape.moveTo(-0.1, 0);
-    bladeShape.lineTo(-0.11, -0.78);
-    bladeShape.lineTo(0, -1.06);
-    bladeShape.lineTo(0.12, -0.75);
-    bladeShape.lineTo(0.1, 0);
-    bladeShape.closePath();
-    const blade = new THREE.Mesh(
-      new THREE.ExtrudeGeometry(bladeShape, { depth: 0.045, bevelEnabled: true, bevelThickness: 0.018, bevelSize: 0.012, bevelSegments: 1 }),
-      bladeMaterial
-    );
-    blade.rotation.x = Math.PI / 2;
-    blade.position.set(0, 0.02, -0.05);
-    this.group.add(blade);
+    if (knife.variant === 'karambit') {
+      const pivot = new THREE.Group();
+      pivot.name = 'karambit-pivot';
+      this.group.add(pivot);
+      const bladeShape = new THREE.Shape();
+      bladeShape.moveTo(-.11, .03);
+      bladeShape.quadraticCurveTo(-.38, -.42, -.19, -.82);
+      bladeShape.quadraticCurveTo(.01, -1.18, .24, -.92);
+      bladeShape.quadraticCurveTo(.02, -.72, .06, -.23);
+      bladeShape.lineTo(.13, .03);
+      bladeShape.closePath();
+      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .055, bevelEnabled: true, bevelThickness: .02, bevelSize: .014, bevelSegments: 1 }), bladeMaterial);
+      blade.name = 'karambit-blade';
+      blade.rotation.x = Math.PI / 2;
+      blade.position.set(0, .02, -.04);
+      pivot.add(blade);
+
+      const handle = new THREE.Mesh(new THREE.BoxGeometry(.28, .18, .82), gripMaterial);
+      handle.name = 'karambit-handle';
+      handle.position.set(0, 0, .45);
+      handle.rotation.x = .08;
+      pivot.add(handle);
+      for (const z of [.18, .42, .66]) {
+        const grip = new THREE.Mesh(new THREE.BoxGeometry(.3, .195, .055), pinMaterial);
+        grip.position.z = z;
+        pivot.add(grip);
+      }
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(.16, .045, 7, 18), gripMaterial);
+      ring.name = 'karambit-ring';
+      ring.position.set(0, 0, .91);
+      pivot.add(ring);
+      const guard = new THREE.Mesh(new THREE.BoxGeometry(.43, .11, .12), pinMaterial);
+      guard.position.z = .04;
+      pivot.add(guard);
+    } else {
+      const bladeShape = new THREE.Shape();
+      bladeShape.moveTo(-.1, 0);
+      bladeShape.lineTo(-.11, -.78);
+      bladeShape.lineTo(0, -1.06);
+      bladeShape.lineTo(.12, -.75);
+      bladeShape.lineTo(.1, 0);
+      bladeShape.closePath();
+      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .045, bevelEnabled: true, bevelThickness: .018, bevelSize: .012, bevelSegments: 1 }), bladeMaterial);
+      blade.rotation.x = Math.PI / 2;
+      blade.position.set(0, .02, -.05);
+      this.group.add(blade);
+    }
 
     if (knife.variant === 'butterfly') {
       const makeHandle = (name, x) => {
@@ -325,7 +445,7 @@ export class WeaponManager extends EventTarget {
       };
       makeHandle('butterfly-handle-left', -0.09);
       makeHandle('butterfly-handle-right', 0.09);
-    } else {
+    } else if (knife.variant !== 'karambit') {
       const guard = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.1, 0.12), pinMaterial);
       this.group.add(guard);
       const handle = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.18, 0.82), gripMaterial);
@@ -333,11 +453,13 @@ export class WeaponManager extends EventTarget {
       this.group.add(handle);
     }
 
-    const baseRotation = new THREE.Euler(1.02, 0.2, -0.1, 'YXZ');
+    const baseRotation = knife.variant === 'karambit'
+      ? new THREE.Euler(.96, .28, -.22, 'YXZ')
+      : new THREE.Euler(1.02, .2, -.1, 'YXZ');
     this.group.userData.baseRotation = baseRotation;
     this.group.rotation.copy(baseRotation);
-    this.group.position.set(0.4, -0.4, -1.0);
-    this.group.scale.setScalar(0.68);
+    this.group.position.set(.4, knife.variant === 'karambit' ? -.36 : -.4, knife.variant === 'karambit' ? -1.08 : -1);
+    this.group.scale.setScalar(knife.variant === 'karambit' ? .74 : .68);
   }
 
   dispatch(type) {
