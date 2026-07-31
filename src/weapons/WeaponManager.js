@@ -36,7 +36,7 @@ export class WeaponManager extends EventTarget {
     this.skinTime += dt;
     if (this.waveMaterials?.length) animateKnifeWaves(this.waveMaterials, this.skinTime);
     const active = this.player.inventory.active;
-    if (active) {
+    if (typeof active?.update === 'function') {
       const result = active.update(dt);
       if (result === 'reloaded') this.dispatch('ammo');
     }
@@ -47,9 +47,10 @@ export class WeaponManager extends EventTarget {
 
     const moving = Math.hypot(this.player.velocity.x, this.player.velocity.z);
     this.sway += dt * (5 + moving);
-    const baseX = active instanceof Knife ? 0.43 : 0.34;
-    const baseY = active instanceof Knife ? -0.4 : -0.31;
-    const baseZ = active instanceof Knife ? -1.0 : -0.62;
+    const holdingBomb = active?.definition?.id === 'bomb';
+    const baseX = active instanceof Knife ? 0.43 : holdingBomb ? .38 : 0.34;
+    const baseY = active instanceof Knife ? -0.4 : holdingBomb ? -.42 : -0.31;
+    const baseZ = active instanceof Knife ? -1.0 : holdingBomb ? -1.08 : -0.62;
     this.group.position.x = baseX + Math.sin(this.sway) * Math.min(0.014, moving * 0.0022);
     this.group.position.y = baseY + Math.abs(Math.cos(this.sway)) * Math.min(0.012, moving * 0.002);
     this.group.position.z = THREE.MathUtils.lerp(this.group.position.z, baseZ, Math.min(1, dt * 16));
@@ -183,6 +184,7 @@ export class WeaponManager extends EventTarget {
     if (this.input.justPressed('primary')) this.player.inventory.equip('primary');
     if (this.input.justPressed('pistol')) this.player.inventory.equip('pistol');
     if (this.input.justPressed('knife')) this.player.inventory.equip('knife');
+    if (this.input.justPressed('bomb')) this.player.inventory.equip('bomb');
     if (this.input.justPressed('lastWeapon')) this.player.inventory.quickSwap();
     const wheel = this.input.consumeWheel();
     if (wheel) this.player.inventory.cycle(wheel);
@@ -253,10 +255,41 @@ export class WeaponManager extends EventTarget {
     const active = this.player.inventory.active;
     if (!active) return;
     if (active instanceof Knife) this.buildKnife(active);
+    else if (active.definition?.id === 'bomb') this.buildBomb();
     else this.buildGun(active.definition);
     this.waveMaterials = collectKnifeWaveMaterials(this.group);
     this.drawTime = active instanceof Knife ? (active.variant === 'karambit' ? 1.02 : .88) : .35;
     this.lastActive = active;
+  }
+
+  buildBomb() {
+    const body = new THREE.MeshStandardMaterial({ color: 0x263028, metalness: .12, roughness: .82, flatShading: true });
+    const panel = new THREE.MeshStandardMaterial({ color: 0x151a16, metalness: .25, roughness: .7, flatShading: true });
+    const screen = new THREE.MeshBasicMaterial({ color: 0x98d263 });
+    const wireColors = [0xd54737, 0x3979c7, 0xe1c944];
+    const pack = new THREE.Mesh(new THREE.BoxGeometry(.62, .38, .23), body);
+    pack.name = 'held-bomb';
+    this.group.add(pack);
+    const keypad = new THREE.Mesh(new THREE.BoxGeometry(.3, .22, .035), panel);
+    keypad.position.set(.08, .02, -.135);
+    this.group.add(keypad);
+    const display = new THREE.Mesh(new THREE.BoxGeometry(.18, .06, .012), screen);
+    display.position.set(.08, .095, -.158);
+    this.group.add(display);
+    for (let i = 0; i < 3; i++) {
+      const wire = new THREE.Mesh(
+        new THREE.TorusGeometry(.16 + i * .035, .012, 5, 12, Math.PI),
+        new THREE.MeshBasicMaterial({ color: wireColors[i] })
+      );
+      wire.rotation.set(Math.PI / 2, 0, Math.PI / 2);
+      wire.position.set(-.2, .12, -.03 + i * .035);
+      this.group.add(wire);
+    }
+    const baseRotation = new THREE.Euler(.12, -.18, -.08, 'YXZ');
+    this.group.userData.baseRotation = baseRotation;
+    this.group.rotation.copy(baseRotation);
+    this.group.position.set(.38, -.42, -1.08);
+    this.group.scale.setScalar(.9);
   }
 
   clearModel() {

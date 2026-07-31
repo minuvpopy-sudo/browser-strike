@@ -6,12 +6,23 @@ export class CollisionWorld {
     const scale=config.scale||1;this.bounds = { minX:-61.5*scale,maxX:61.5*scale,minZ:-55.5*scale,maxZ:55.5*scale };
   }
   moveCircle(position, delta, radius = .55) {
-    let x = THREE.MathUtils.clamp(position.x + delta.x, this.bounds.minX + radius, this.bounds.maxX - radius);
-    let z = position.z;
-    if (this.intersects(x, z, radius)) x = position.x;
-    z = THREE.MathUtils.clamp(position.z + delta.z, this.bounds.minZ + radius, this.bounds.maxZ - radius);
-    if (this.intersects(x, z, radius)) z = position.z;
-    return { x, z, blocked: x === position.x && z === position.z && (delta.x !== 0 || delta.z !== 0) };
+    let x = THREE.MathUtils.clamp(position.x, this.bounds.minX + radius, this.bounds.maxX - radius);
+    let z = THREE.MathUtils.clamp(position.z, this.bounds.minZ + radius, this.bounds.maxZ - radius);
+    const distance = Math.hypot(delta.x, delta.z);
+    const steps = Math.max(1, Math.ceil(distance / Math.max(.08, radius * .35)));
+    const stepX = delta.x / steps;
+    const stepZ = delta.z / steps;
+    let blockedX = false;
+    let blockedZ = false;
+    for (let i = 0; i < steps; i++) {
+      const nextX = THREE.MathUtils.clamp(x + stepX, this.bounds.minX + radius, this.bounds.maxX - radius);
+      if ((nextX === x && stepX !== 0) || this.intersects(nextX, z, radius)) blockedX = blockedX || stepX !== 0;
+      else x = nextX;
+      const nextZ = THREE.MathUtils.clamp(z + stepZ, this.bounds.minZ + radius, this.bounds.maxZ - radius);
+      if ((nextZ === z && stepZ !== 0) || this.intersects(x, nextZ, radius)) blockedZ = blockedZ || stepZ !== 0;
+      else z = nextZ;
+    }
+    return { x, z, blockedX, blockedZ, blocked: blockedX && blockedZ };
   }
   intersects(x,z,radius=.55) { return this.boxes.some((b)=>x+radius>b.minX&&x-radius<b.maxX&&z+radius>b.minZ&&z-radius<b.maxZ&&b.maxY>.2); }
   segmentBlocked(a,b,maxHeight=2) {

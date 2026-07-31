@@ -48,11 +48,16 @@ export class InputManager extends EventTarget {
   onKeyUp(e) { this.keys.delete(this.normalizedCode(e.code)); }
   onMouseDown(e) { if (this.enabled) this.mouseButtons.add(e.button); }
   onMouseUp(e) { this.mouseButtons.delete(e.button); }
-  onMouseMove(e) { if (this.enabled && document.pointerLockElement === this.element) { this.lookX += e.movementX; this.lookY += e.movementY; } }
+  onMouseMove(e) {
+    if (!this.enabled || document.pointerLockElement !== this.element) return;
+    const clampDelta = (value) => Math.max(-120, Math.min(120, Number.isFinite(value) ? value : 0));
+    this.lookX += clampDelta(e.movementX);
+    this.lookY += clampDelta(e.movementY);
+  }
   onWheel(e) { if (this.enabled) this.wheel += Math.sign(e.deltaY); }
   action(name) { return this.keys.has(this.settings.values.keys[name]); }
   justPressed(name) { const code = this.settings.values.keys[name]; if (!this.pressed.has(code)) return false; this.pressed.delete(code); return true; }
-  consumeLook() { const value = { x: this.lookX, y: this.lookY }; this.lookX = 0; this.lookY = 0; return value; }
+  consumeLook() { const value = { x: Math.max(-180,Math.min(180,this.lookX)), y: Math.max(-180,Math.min(180,this.lookY)) }; this.lookX = 0; this.lookY = 0; return value; }
   consumeWheel() { const value = this.wheel; this.wheel = 0; return value; }
   endFrame() { this.pressed.clear(); }
   clear() { this.keys.clear(); this.pressed.clear(); this.mouseButtons.clear(); this.lookX = this.lookY = this.wheel = 0; }

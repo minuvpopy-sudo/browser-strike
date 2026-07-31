@@ -29,10 +29,45 @@ export class AudioManager {
     filter.type = 'bandpass'; filter.frequency.value = 850; gain.gain.setValueAtTime(gainValue, this.context.currentTime); gain.gain.exponentialRampToValueAtTime(.0001, this.context.currentTime + duration);
     source.buffer = buffer; source.connect(filter).connect(gain).connect(this.master); source.start();
   }
-  shot(power = 1) { this.tone('shot', { gain: .12 * power, frequency: 100 / power, duration: .08 + power * .02 }); }
+  shot(power = 1) {
+    if (!this.unlocked || !this.context) return;
+    const now = this.context.currentTime;
+    const volume = (this.settings.values.shotsVolume ?? 80) / 100;
+    const strength = Math.max(.7, Math.min(1.7, power));
+    const duration = .055 + strength * .018;
+    const length = Math.ceil(this.context.sampleRate * duration);
+    const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) {
+      const decay = Math.pow(1 - i / length, 2.4);
+      data[i] = (Math.random() * 2 - 1) * decay;
+    }
+    const crack = this.context.createBufferSource();
+    const highpass = this.context.createBiquadFilter();
+    const crackGain = this.context.createGain();
+    highpass.type = 'highpass';
+    highpass.frequency.setValueAtTime(620 + strength * 180, now);
+    crackGain.gain.setValueAtTime(.16 * strength * volume, now);
+    crackGain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    crack.buffer = buffer;
+    crack.connect(highpass).connect(crackGain).connect(this.master);
+    crack.start(now);
+    crack.stop(now + duration);
+
+    const body = this.context.createOscillator();
+    const bodyGain = this.context.createGain();
+    body.type = 'triangle';
+    body.frequency.setValueAtTime(190 / strength, now);
+    body.frequency.exponentialRampToValueAtTime(85, now + .045);
+    bodyGain.gain.setValueAtTime(.028 * strength * volume, now);
+    bodyGain.gain.exponentialRampToValueAtTime(.0001, now + .05);
+    body.connect(bodyGain).connect(this.master);
+    body.start(now);
+    body.stop(now + .055);
+  }
   click() { this.tone('ui', { frequency: 520, endFrequency: 300, gain: .035, duration: .045 }); }
   empty() { this.tone('ui', { frequency: 170, endFrequency: 120, gain: .045, duration: .04 }); }
   reload() { this.tone('ui', { frequency: 240, endFrequency: 100, gain: .045, duration: .12 }); }
-  step(surface = 'stone') { const frequencies = { stone: 100, sand: 70, wood: 140, metal: 260 }; this.tone('step', { frequency: frequencies[surface] || 100, endFrequency: 55, gain: .035, duration: .04 }); }
+  step() {}
   explosion() { this.tone('shot', { gain: .28, frequency: 70, endFrequency: 25, duration: .5 }); }
 }

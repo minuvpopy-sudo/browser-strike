@@ -23,6 +23,8 @@ import { GameLoop } from '../src/core/GameLoop.js';
 import { KNIFE_SKINS } from '../src/skins/KnifeSkinDefinitions.js';
 import { animateKnifeWaves, collectKnifeWaveMaterials, createKnifeBladeMaterial, disposeKnifeMaterial } from '../src/skins/KnifeMaterial.js';
 import { SkinPreview } from '../src/skins/SkinPreview.js';
+import { PlayerInventory } from '../src/player/PlayerInventory.js';
+import { PlayerMovement } from '../src/player/PlayerMovement.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -126,8 +128,35 @@ test('другой бот подбирает выпавшую бомбу и по
   const picker={team:'attackers',alive:true,isPlayer:false,hasBomb:false,position:new THREE.Vector3(4,0,4)};
   const player={team:'defenders',alive:true,isPlayer:true,position:new THREE.Vector3(50,0,50),inventory:{slots:{bomb:false}}};
   const game={scene:new THREE.Scene(),settings:{values:{bombTime:40}},player,botManager:{bots:[picker],alive:()=>[picker]},mapConfig:MAP_CONFIG,hud:{interaction(){},message(){}},audio:{tone(){},explosion(){}},explosion:{spawn(){}}};
-  const mode=new BombDefusalMode(game,{state:'live',end(){}});mode.drop(picker.position);mode.updatePlant(.1);
+  const mode=new BombDefusalMode(game,{state:'live',end(){}});mode.carrier=picker;picker.hasBomb=true;assert.equal(mode.drop(picker.position),true);mode.updatePlant(.1);assert.equal(mode.carrier,null);mode.pickupCooldown=0;mode.updatePlant(.1);
   assert.equal(mode.carrier,picker);assert.equal(picker.hasBomb,true);assert.ok(picker.bombSite);mode.dispose();
+});
+
+test('бомба без ошибки берётся в руки и после выбрасывания сменяется на оружие',()=>{
+  const inventory=new PlayerInventory('attackers',{type:'karambit',skin:'classic'});inventory.setBomb(true);assert.equal(inventory.equip('bomb'),true);
+  const player={alive:true,velocity:new THREE.Vector3(),inventory};
+  const manager=new WeaponManager(new THREE.Group(),player,{justPressed:()=>false,consumeWheel:()=>0,mouseButtons:new Set()},{},{weapon:()=>({colors:[0x333333,0x111111]}),knifeStyle:()=>({blade:0xcccccc,handle:0x222222})});
+  assert.doesNotThrow(()=>manager.update(1/60));assert.ok(manager.group.getObjectByName('held-bomb'));
+  inventory.setBomb(false);assert.notEqual(inventory.activeSlot,'bomb');assert.ok(inventory.active);assert.doesNotThrow(()=>manager.update(1/60));
+});
+
+test('столкновение со стеной гасит скорость по оси и не отбрасывает игрока назад',()=>{
+  const collision=new CollisionWorld({scale:1,walls:[{x:1,z:0,y:1,w:1,d:4,h:2}],crates:[]});
+  const start=new THREE.Vector3(0,0,0);const moved=collision.moveCircle(start,{x:1.5,z:.6},.5);
+  assert.equal(moved.blockedX,true);assert.ok(moved.x>=start.x);assert.ok(moved.z>start.z);assert.ok(moved.z<=.600001);
+
+  const player={alive:true,position:start.clone(),velocity:new THREE.Vector3(6,0,0),inventory:{active:null}};
+  const input={action:(name)=>name==='right',justPressed:()=>false};
+  const movement=new PlayerMovement(player,collision,input);movement.update(1/60,0,{autoBhop:false},{step(){throw new Error('шаги не должны звучать');},tone(){throw new Error('стуки не должны звучать');}});
+  assert.equal(player.velocity.x,0);assert.ok(player.position.x>=0);
+});
+
+test('единичный скачок мыши не разворачивает камеру',()=>{
+  const originalDocument=globalThis.document;const element={};globalThis.document={pointerLockElement:element};
+  try{
+    const input=new InputManager(element,{values:{keys:{}}});input.enabled=true;input.onMouseMove({movementX:10000,movementY:-10000});
+    assert.deepEqual(input.consumeLook(),{x:120,y:-120});
+  }finally{globalThis.document=originalDocument;}
 });
 
 test('бот строит проходимый маршрут от базы к точке и действительно движется',()=>{
