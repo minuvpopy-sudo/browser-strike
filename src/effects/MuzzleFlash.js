@@ -1,0 +1,1 @@
+export class MuzzleFlash { constructor(group){this.light=group?.getObjectByName('muzzle');this.time=0;}trigger(){if(this.light){this.light.intensity=4;this.time=.035;}}update(dt){if(this.time>0){this.time-=dt;if(this.time<=0&&this.light)this.light.intensity=0;}} }

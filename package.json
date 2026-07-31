@@ -1,0 +1,19 @@
+{
+  "name": "browser-strike",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Одиночный браузерный тактический FPS на Three.js",
+  "scripts": {
+    "dev": "vite --configLoader runner --host 127.0.0.1 --port 5173",
+    "build": "vite build --configLoader runner",
+    "preview": "vite preview --configLoader runner --host 127.0.0.1 --port 4173",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.7"
+  }
+}

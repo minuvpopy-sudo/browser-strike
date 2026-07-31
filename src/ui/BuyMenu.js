@@ -1,0 +1,12 @@
+import { WEAPONS, EQUIPMENT, GRENADES, BUY_CATEGORIES } from '../weapons/WeaponDefinitions.js';
+import { canBuy } from '../config/MatchRules.js';
+export class BuyMenu extends EventTarget {
+  constructor(){super();this.root=document.getElementById('buy-menu');this.categories=document.getElementById('buy-categories');this.items=document.getElementById('buy-items');this.category='pistols';this.context=null;this.buildCategories();}
+  buildCategories(){for(const [id,label] of BUY_CATEGORIES){const b=document.createElement('button');b.textContent=label;b.dataset.category=id;b.addEventListener('click',()=>{this.category=id;this.render();});this.categories.append(b);}}
+  open(context){this.context=context;this.root.classList.add('visible');this.render();}
+  close(){this.root.classList.remove('visible');}
+  toggle(context){this.root.classList.contains('visible')?this.close():this.open(context);}
+  get visible(){return this.root.classList.contains('visible');}
+  render(){if(!this.context)return;this.categories.querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b.dataset.category===this.category));document.getElementById('buy-money').textContent=`$${this.context.player.money}`;document.getElementById('buy-time').textContent=`ОСТАЛОСЬ ${Math.ceil(this.context.buyTime)} СЕК.`;const all={...WEAPONS,...EQUIPMENT,...GRENADES};const entries=Object.values(all).filter(x=>x.category===this.category||(this.category==='ammo'&&x.category==='ammo'));this.items.innerHTML='';for(const item of entries){if(item.id==='knife')continue;const available=!item.side||item.side==='both'||item.side===this.context.player.team;const allowed=canBuy({money:this.context.player.money,cost:item.cost,inBuyZone:this.context.inBuyZone,buyTimeLeft:this.context.buyTime,available});const b=document.createElement('button');b.className=`buy-item${allowed?'':' disabled'}`;b.innerHTML=`<strong>${item.name}</strong><small>${item.damage?`Урон ${item.damage} · Магазин ${item.mag}`:item.category==='grenades'?'Одноразовое снаряжение':'Защита и боезапас'}</small><span class="price">$${item.cost}</span>${!available?'<small>Недоступно стороне</small>':''}`;b.addEventListener('click',()=>{if(allowed)this.dispatchEvent(new CustomEvent('buy',{detail:item}));else this.dispatchEvent(new CustomEvent('denied',{detail:item}));});this.items.append(b);}}
+  update(context){this.context=context;if(this.visible)this.render();}
+}

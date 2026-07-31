@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#111713" />
+    <title>Browser Strike: Sandstorm</title>
+  </head>
+  <body>
+    <div id="app">
+      <section id="main-menu" class="screen menu-screen active" aria-label="Главное меню">
+        <div class="menu-vignette"></div>
+        <header class="brand">
+          <div class="eyebrow">ОДИНОЧНЫЙ ТАКТИЧЕСКИЙ FPS</div>
+          <h1>BROWSER <span>STRIKE</span></h1>
+          <div class="subtitle">ОПЕРАЦИЯ «ПЕСЧАНАЯ БУРЯ»</div>
+        </header>
+        <nav class="main-nav">
+          <button id="new-game" class="menu-button primary">Новая игра <kbd>↵</kbd></button>
+          <button id="quick-match" class="menu-button">Быстрый матч</button>
+          <button class="menu-button" data-open="mode-menu">Выбор режима <small id="mode-label">Закладка бомбы</small></button>
+          <button class="menu-button" data-open="map-menu">Выбор карты <small>de_sandstorm2</small></button>
+          <button class="menu-button" data-open="team-menu">Выбор команды <small id="team-label">Автовыбор</small></button>
+          <button class="menu-button" data-open="knife-menu">Выбор ножа <small id="knife-label">Стандартный</small></button>
+          <button class="menu-button" data-open="settings-menu">Настройки</button>
+          <button class="menu-button" data-open="controls-menu">Управление</button>
+          <button class="menu-button" data-open="about-menu">Об игре</button>
+          <button id="exit-button" class="menu-button danger">Выход</button>
+        </nav>
+        <footer class="menu-footer"><span>v1.0 LOCAL</span><span>ВСЕ РЕСУРСЫ СОЗДАНЫ ДЛЯ ПРОЕКТА</span></footer>
+      </section>
+
+      <section id="team-menu" class="screen panel-screen" aria-label="Выбор команды">
+        <div class="panel wide">
+          <button class="back-button" data-back>← Назад</button>
+          <p class="eyebrow">ПОДГОТОВКА К МАТЧУ</p><h2>Выбор команды</h2>
+          <div class="choice-grid three">
+            <button class="choice-card team-choice" data-team="attackers"><span class="team-emblem attackers">A</span><strong>Террористы</strong><small>Атакуйте точки и установите заряд</small></button>
+            <button class="choice-card team-choice" data-team="defenders"><span class="team-emblem defenders">D</span><strong>Спецназ</strong><small>Защищайте точки и обезвредьте заряд</small></button>
+            <button class="choice-card team-choice selected" data-team="auto"><span class="team-emblem auto">?</span><strong>Автовыбор</strong><small>Балансировка команд перед раундом</small></button>
+          </div>
+        </div>
+      </section>
+
+      <section id="mode-menu" class="screen panel-screen" aria-label="Выбор режима">
+        <div class="panel"><button class="back-button" data-back>← Назад</button><p class="eyebrow">ПРАВИЛА МАТЧА</p><h2>Выбор режима</h2>
+          <div class="choice-grid two">
+            <button class="choice-card mode-choice selected" data-mode="bomb"><strong>Закладка бомбы</strong><small>Раунды, экономика, точки A и B</small></button>
+            <button class="choice-card mode-choice" data-mode="tdm"><strong>Командный бой</strong><small>Возрождение и счёт по убийствам</small></button>
+          </div>
+        </div>
+      </section>
+
+      <section id="map-menu" class="screen panel-screen" aria-label="Выбор карты">
+        <div class="panel"><button class="back-button" data-back>← Назад</button><p class="eyebrow">РАЙОН ОПЕРАЦИИ</p><h2>de_sandstorm2</h2>
+          <div class="map-card"><div class="map-schematic"><i>A</i><i>B</i><span></span></div><div><strong>Песчаный приграничный город</strong><p>Два плэнта, центр с двойными дверями, тоннели, короткий и длинный маршруты.</p><span class="tag">ВЫБРАНО</span></div></div>
+        </div>
+      </section>
+
+      <section id="knife-menu" class="screen panel-screen" aria-label="Выбор ножа">
+        <div class="panel wide"><button class="back-button" data-back>← Назад</button><p class="eyebrow">ЛИЧНОЕ СНАРЯЖЕНИЕ</p><h2>Выбор ножа</h2>
+          <div class="knife-layout"><canvas id="knife-preview"></canvas><div class="knife-options">
+            <div class="segmented"><button data-knife="standard">Стандартный</button><button class="selected" data-knife="butterfly">Бабочка</button></div>
+            <label>Оформление<select id="knife-skin"><option value="classic">Классический металл</option><option value="black">Чёрный</option><option value="blue">Синий градиент</option><option value="red">Красный градиент</option><option value="gold">Золотой</option><option value="rainbow">Радужный</option><option value="marble">Мраморный</option><option value="carbon">Карбоновый</option></select></label>
+            <div class="button-row"><button id="inspect-knife" class="secondary">Осмотреть</button><button id="select-knife" class="accent">Выбрать</button></div>
+            <p id="knife-status" class="status-line">Выбран нож-бабочка</p>
+          </div></div>
+        </div>
+      </section>
+
+      <section id="settings-menu" class="screen panel-screen" aria-label="Настройки">
+        <div class="panel settings-panel"><button class="back-button" data-back>← Назад</button><p class="eyebrow">СИСТЕМА</p><h2>Настройки</h2>
+          <div class="settings-tabs"><button class="selected" data-settings-tab="game">Игра</button><button data-settings-tab="controls">Управление</button><button data-settings-tab="graphics">Графика</button><button data-settings-tab="audio">Звук</button></div>
+          <div class="settings-page active" data-settings-page="game">
+            <label>Сложность ботов<select data-setting="difficulty"><option value="easy">Лёгкая</option><option value="normal">Нормальная</option><option value="hard">Сложная</option><option value="expert">Эксперт</option></select></label>
+            <label>Ботов на сторону <output data-output="botsPerTeam">5</output><input type="range" min="1" max="10" data-setting="botsPerTeam"></label>
+            <label>Длительность раунда <output data-output="roundTime">150</output> сек<input type="range" min="60" max="300" step="15" data-setting="roundTime"></label>
+            <label>Время покупки <output data-output="buyTime">25</output> сек<input type="range" min="10" max="60" step="5" data-setting="buyTime"></label>
+            <label>Таймер бомбы <output data-output="bombTime">40</output> сек<input type="range" min="25" max="60" step="5" data-setting="bombTime"></label>
+            <label class="toggle"><input type="checkbox" data-setting="friendlyFire"><span></span> Дружественный огонь</label>
+            <label class="toggle"><input type="checkbox" data-setting="autoBhop"><span></span> Автоматический bunny hop</label>
+            <label class="toggle"><input type="checkbox" data-setting="autoPickup"><span></span> Автосмена на поднятое оружие</label>
+          </div>
+          <div class="settings-page" data-settings-page="controls">
+            <label>Чувствительность мыши <output data-output="sensitivity">1.0</output><input type="range" min="0.2" max="3" step="0.1" data-setting="sensitivity"></label>
+            <label class="toggle"><input type="checkbox" data-setting="invertMouse"><span></span> Инверсия мыши</label>
+            <label>Скорость прокрутки <output data-output="wheelSpeed">1</output><input type="range" min="1" max="3" data-setting="wheelSpeed"></label>
+            <div id="key-bindings" class="key-bindings"></div>
+          </div>
+          <div class="settings-page" data-settings-page="graphics">
+            <label>Масштаб рендера<select data-setting="renderScale"><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option></select></label>
+            <label>Поле зрения <output data-output="fov">80</output>°<input type="range" min="65" max="105" data-setting="fov"></label>
+            <label>Дальность прорисовки <output data-output="drawDistance">220</output><input type="range" min="120" max="350" step="10" data-setting="drawDistance"></label>
+            <label>Качество текстур<select data-setting="textureQuality"><option value="low">Низкое</option><option value="medium">Среднее</option><option value="high">Высокое</option></select></label>
+            <label>Качество теней<select data-setting="shadowQuality"><option value="low">Низкое</option><option value="medium">Среднее</option><option value="high">Высокое</option></select></label>
+            <label class="toggle"><input type="checkbox" data-setting="antialias"><span></span> Сглаживание</label>
+            <label class="toggle"><input type="checkbox" data-setting="shadows"><span></span> Тени</label>
+            <label class="toggle"><input type="checkbox" data-setting="particles"><span></span> Частицы</label>
+            <label class="toggle"><input type="checkbox" data-setting="showFps"><span></span> Показывать FPS</label>
+            <label>Ограничение FPS<select data-setting="fpsLimit"><option value="0">Без ограничения</option><option value="60">60</option><option value="90">90</option><option value="120">120</option></select></label>
+          </div>
+          <div class="settings-page" data-settings-page="audio">
+            <label>Общая громкость <output data-output="masterVolume">70</output>%<input type="range" min="0" max="100" data-setting="masterVolume"></label>
+            <label>Выстрелы <output data-output="shotsVolume">85</output>%<input type="range" min="0" max="100" data-setting="shotsVolume"></label>
+            <label>Шаги <output data-output="stepsVolume">65</output>%<input type="range" min="0" max="100" data-setting="stepsVolume"></label>
+            <label>Интерфейс <output data-output="uiVolume">60</output>%<input type="range" min="0" max="100" data-setting="uiVolume"></label>
+            <label>Музыка <output data-output="musicVolume">25</output>%<input type="range" min="0" max="100" data-setting="musicVolume"></label>
+            <label>Голосовые уведомления <output data-output="voiceVolume">70</output>%<input type="range" min="0" max="100" data-setting="voiceVolume"></label>
+          </div>
+          <div class="button-row"><button id="reset-settings" class="secondary">Сбросить</button><button id="save-settings" class="accent">Сохранить</button></div>
+        </div>
+      </section>
+
+      <section id="controls-menu" class="screen panel-screen"><div class="panel"><button class="back-button" data-back>← Назад</button><p class="eyebrow">ПОЛЕВОЙ УСТАВ</p><h2>Управление</h2><div class="controls-grid" id="controls-grid"></div></div></section>
+      <section id="about-menu" class="screen panel-screen"><div class="panel"><button class="back-button" data-back>← Назад</button><p class="eyebrow">О ПРОЕКТЕ</p><h2>Browser Strike</h2><p class="lead">Одиночный тактический шутер, созданный с нуля на Three.js. Карта, модели, материалы и синтезированные звуки оригинальны и не используют ресурсы Valve.</p><div class="briefing"><strong>Задача</strong><p>Атакуйте или защищайте две точки. Управляйте экономикой, покупайте снаряжение и переигрывайте ботов.</p></div></div></section>
+
+      <section id="game-screen" class="screen game-screen" aria-label="Игра">
+        <div id="viewport" tabindex="0"></div>
+        <div id="click-to-play"><strong>НАЖМИТЕ ДЛЯ ПРОДОЛЖЕНИЯ</strong><small>Курсор будет захвачен игровой областью</small></div>
+        <div id="hud">
+          <canvas id="radar" width="190" height="190"></canvas>
+          <div id="score-strip"><span id="attack-score">0</span><b id="round-timer">02:30</b><span id="defend-score">0</span><small id="round-label">РАУНД 1</small></div>
+          <div id="killfeed"></div><div id="fps-counter"></div>
+          <div id="crosshair"><i></i><i></i><i></i><i></i></div>
+          <div id="interaction"><span></span><progress max="1" value="0"></progress></div>
+          <div id="player-stats"><span class="hud-icon">✚</span><strong id="health">100</strong><span class="hud-icon shield">⬟</span><strong id="armor">0</strong></div>
+          <div id="weapon-stats"><small id="weapon-name">USP</small><strong id="ammo">12</strong><span>/</span><b id="reserve">24</b><small id="grenades">● ○ ○</small></div>
+          <div id="money">$800</div><div id="bomb-indicator">▣ ЗАРЯД</div>
+          <div id="zone-indicator">ТОЧКА УСТАНОВКИ</div><div id="damage-direction"></div>
+          <div id="message-stack"></div>
+        </div>
+        <div id="scoreboard" class="game-modal"><h2>ТАБЛИЦА СЧЁТА</h2><div class="score-columns"><span>ИГРОК</span><span>У</span><span>С</span><span>ПОМ</span><span>ДЕНЬГИ</span><span>СТАТУС</span><span>ПИНГ</span></div><div id="score-rows"></div></div>
+        <div id="buy-menu" class="game-modal buy-modal"><header><div><small>ЗОНА ПОКУПКИ</small><h2>СНАРЯЖЕНИЕ</h2></div><strong id="buy-money">$800</strong></header><div class="buy-layout"><nav id="buy-categories"></nav><div id="buy-items"></div></div><footer><span>B / ESC — ЗАКРЫТЬ</span><span id="buy-time">ОСТАЛОСЬ 25 СЕК.</span></footer></div>
+        <div id="pause-menu" class="game-modal pause-modal"><p class="eyebrow">ИГРА ПРИОСТАНОВЛЕНА</p><h2>Пауза</h2><button id="resume-game" class="accent">Продолжить</button><button id="pause-settings">Настройки</button><button id="leave-match" class="danger">В главное меню</button></div>
+        <div id="round-end" class="round-banner"><small>РАУНД ЗАВЕРШЁН</small><strong id="round-result">СПЕЦНАЗ ПОБЕДИЛ</strong><span id="round-reason">Цель защищена</span></div>
+        <div id="death-screen"><strong>ВЫ ПОГИБЛИ</strong><span id="spectating">Наблюдение за союзником</span></div>
+      </section>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,1 @@
+export class EndRoundScreen { constructor(){this.root=document.getElementById('round-end');}show(winner,reason){document.getElementById('round-result').textContent=winner==='attackers'?'ТЕРРОРИСТЫ ПОБЕДИЛИ':'СПЕЦНАЗ ПОБЕДИЛ';document.getElementById('round-reason').textContent=reason;this.root.classList.add('visible');}hide(){this.root.classList.remove('visible');} }

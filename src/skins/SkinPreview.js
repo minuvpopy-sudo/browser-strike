@@ -1,0 +1,12 @@
+import * as THREE from 'three';
+import { KNIFE_SKINS } from './KnifeSkinDefinitions.js';
+
+export class SkinPreview {
+  constructor(canvas){this.canvas=canvas;this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(38,1,.1,30);this.camera.position.set(0,1.1,6);this.renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,2));this.group=new THREE.Group();this.scene.add(this.group);this.scene.add(new THREE.HemisphereLight(0xf7e4bd,0x26312b,2.1));const key=new THREE.DirectionalLight(0xffffff,3);key.position.set(3,5,4);this.scene.add(key);this.type='butterfly';this.skin='classic';this.spin=0;this.rebuild();this.running=true;this.animate();}
+  resize(){const w=this.canvas.clientWidth||480,h=this.canvas.clientHeight||400;if(this.canvas.width!==w*devicePixelRatio||this.canvas.height!==h*devicePixelRatio){this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}}
+  set(type,skin){this.type=type;this.skin=skin;this.rebuild();}
+  rebuild(){this.group.clear();const style=KNIFE_SKINS[this.skin]||KNIFE_SKINS.classic;const bladeMat=new THREE.MeshStandardMaterial({color:style.blade,metalness:.82,roughness:.25});const gripMat=new THREE.MeshStandardMaterial({color:style.handle,metalness:.28,roughness:.64});const bladeShape=new THREE.Shape();bladeShape.moveTo(-.18,-.15);bladeShape.lineTo(2.25,-.04);bladeShape.lineTo(2.65,.16);bladeShape.lineTo(.15,.48);bladeShape.closePath();const blade=new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape,{depth:.08,bevelEnabled:true,bevelThickness:.035,bevelSize:.025,bevelSegments:2}),bladeMat);blade.position.x=-.1;this.group.add(blade);if(this.type==='butterfly'){for(const y of [-.3,.43]){const h=new THREE.Mesh(new THREE.BoxGeometry(1.75,.22,.22),gripMat);h.position.set(-1,y,.04);h.rotation.z=y<0?-.18:.18;this.group.add(h);}const pivot=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.26,12),bladeMat);pivot.rotation.x=Math.PI/2;pivot.position.x=-.05;this.group.add(pivot);}else{const h=new THREE.Mesh(new THREE.BoxGeometry(1.65,.62,.28),gripMat);h.position.x=-.92;this.group.add(h);}this.group.rotation.set(.25,-.45,-.12);}
+  inspect(){this.spin=Math.PI*2;}
+  animate(){if(!this.running)return;requestAnimationFrame(()=>this.animate());this.resize();const target=this.spin>0?.16:.006;this.group.rotation.y+=target;if(this.spin>0)this.spin-=target;this.renderer.render(this.scene,this.camera);}
+  dispose(){this.running=false;this.renderer.dispose();}
+}
