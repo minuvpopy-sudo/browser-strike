@@ -42,40 +42,43 @@ export function createKnifeBladeMaterial(style) {
   if (style.pattern !== 'waves') {
     return new THREE.MeshStandardMaterial({ color: style.blade, metalness: .88, roughness: .22, flatShading: true });
   }
-  const material = new THREE.MeshPhysicalMaterial({
+  const material = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     map: createWaveTexture(),
-    metalness: .94,
-    roughness: .16,
-    clearcoat: .62,
-    clearcoatRoughness: .16,
-    iridescence: 1,
-    iridescenceIOR: 1.42,
-    iridescenceThicknessRange: [120, 390],
+    metalness: .9,
+    roughness: .2,
     emissive: 0x031942,
-    emissiveIntensity: .3,
+    emissiveIntensity: .27,
     flatShading: true
   });
   material.userData.animatedWaves = true;
   return material;
 }
 
-export function animateKnifeWaves(root, elapsed) {
+export function collectKnifeWaveMaterials(root) {
   const visited = new Set();
+  const result = [];
   root.traverse((object) => {
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       if (!material?.userData?.animatedWaves || visited.has(material)) continue;
       visited.add(material);
-      if (material.map) {
-        material.map.offset.x = (elapsed * .045) % 1;
-        material.map.offset.y = Math.sin(elapsed * .7) * .045;
-        material.map.rotation = Math.sin(elapsed * .35) * .035;
-      }
-      material.emissiveIntensity = .25 + (Math.sin(elapsed * 1.8) + 1) * .08;
-      material.iridescenceIOR = 1.38 + (Math.sin(elapsed * .9) + 1) * .08;
+      result.push(material);
     }
   });
+  return result;
+}
+
+export function animateKnifeWaves(materials, elapsed) {
+  if (!materials || typeof materials[Symbol.iterator] !== 'function') return;
+  for (const material of materials) {
+    if (material.map) {
+      material.map.offset.x = (elapsed * .035) % 1;
+      material.map.offset.y = Math.sin(elapsed * .65) * .035;
+      material.map.rotation = Math.sin(elapsed * .3) * .025;
+    }
+    material.emissiveIntensity = .22 + (Math.sin(elapsed * 1.6) + 1) * .065;
+  }
 }
 
 export function disposeKnifeMaterial(material) {

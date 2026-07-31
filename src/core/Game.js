@@ -105,10 +105,10 @@ export class Game extends EventTarget {
     }
   }
   handleLoopError(error) {
-    console.error('Игровой кадр восстановлен после ошибки', error);
     const now = performance.now();
     if (!this.loopErrorNoticeAt || now - this.loopErrorNoticeAt > 4000) {
       this.loopErrorNoticeAt = now;
+      console.error('Игровой кадр восстановлен после ошибки', error);
       this.safeEffect('восстановление игры', () => this.hud.message('Игра восстановилась после ошибки', 'error'));
     }
   }

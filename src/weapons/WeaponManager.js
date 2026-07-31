@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Firearm } from './Firearm.js';
 import { Knife } from './Knife.js';
-import { animateKnifeWaves, createKnifeBladeMaterial, disposeKnifeMaterial } from '../skins/KnifeMaterial.js';
+import { animateKnifeWaves, collectKnifeWaveMaterials, createKnifeBladeMaterial, disposeKnifeMaterial } from '../skins/KnifeMaterial.js';
 
 const easeOutBack = (t) => {
   const c1 = 1.70158;
@@ -27,13 +27,14 @@ export class WeaponManager extends EventTarget {
     this.flashTime = 0;
     this.drawTime = 0;
     this.skinTime = 0;
+    this.waveMaterials = [];
     this.knifeAction = null;
     this.rebuild();
   }
 
   update(dt) {
     this.skinTime += dt;
-    animateKnifeWaves(this.group, this.skinTime);
+    if (this.waveMaterials?.length) animateKnifeWaves(this.waveMaterials, this.skinTime);
     const active = this.player.inventory.active;
     if (active) {
       const result = active.update(dt);
@@ -253,11 +254,13 @@ export class WeaponManager extends EventTarget {
     if (!active) return;
     if (active instanceof Knife) this.buildKnife(active);
     else this.buildGun(active.definition);
+    this.waveMaterials = collectKnifeWaveMaterials(this.group);
     this.drawTime = active instanceof Knife ? (active.variant === 'karambit' ? 1.02 : .88) : .35;
     this.lastActive = active;
   }
 
   clearModel() {
+    this.waveMaterials = [];
     for (const child of [...this.group.children]) {
       child.traverse((object) => {
         object.geometry?.dispose();

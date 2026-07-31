@@ -21,7 +21,8 @@ import { applyDamageSafely, selectMeleeTarget } from '../src/core/CombatResolver
 import { InputManager } from '../src/core/InputManager.js';
 import { GameLoop } from '../src/core/GameLoop.js';
 import { KNIFE_SKINS } from '../src/skins/KnifeSkinDefinitions.js';
-import { createKnifeBladeMaterial, disposeKnifeMaterial } from '../src/skins/KnifeMaterial.js';
+import { animateKnifeWaves, collectKnifeWaveMaterials, createKnifeBladeMaterial, disposeKnifeMaterial } from '../src/skins/KnifeMaterial.js';
+import { SkinPreview } from '../src/skins/SkinPreview.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -197,6 +198,16 @@ test('игровой цикл продолжает следующий кадр �
   }finally{globalThis.requestAnimationFrame=original;}
 });
 
+test('повторяющаяся ошибка получает короткую паузу и не забивает каждый кадр',()=>{
+  const original=globalThis.requestAnimationFrame;let updates=0,reports=0;
+  globalThis.requestAnimationFrame=()=>91;
+  try{
+    const loop=new GameLoop(()=>{updates++;throw new Error('repeat');},()=>{},1/60,()=>{reports++;});
+    loop.running=true;loop.last=0;loop.tick(20);loop.tick(30);
+    assert.equal(updates,1);assert.equal(reports,1);assert.ok(loop.errorCooldown>0);assert.equal(loop.frame,91);
+  }finally{globalThis.requestAnimationFrame=original;}
+});
+
 test('меню покупки активирует товар одним событием',()=>{
   const menu=Object.setPrototypeOf(new EventTarget(),BuyMenu.prototype);let item=null;
   menu.addEventListener('buy',(event)=>{item=event.detail;});
@@ -222,7 +233,14 @@ test('основные винтовки имеют отдельные класс
 test('скин «Волны» создаёт анимированный чёрно-синий металлический материал',()=>{
   assert.equal(KNIFE_SKINS.waves.pattern,'waves');
   const material=createKnifeBladeMaterial(KNIFE_SKINS.waves);
-  assert.equal(material.userData.animatedWaves,true);assert.ok(material.metalness>.9);assert.ok(material.iridescence>0);disposeKnifeMaterial(material);
+  const root=new THREE.Group();root.add(new THREE.Mesh(new THREE.BoxGeometry(1,1,1),material));const waveMaterials=collectKnifeWaveMaterials(root);
+  animateKnifeWaves(waveMaterials,1);assert.equal(material.userData.animatedWaves,true);assert.equal(material.type,'MeshStandardMaterial');assert.ok(material.metalness>=.9);assert.equal(waveMaterials.length,1);disposeKnifeMaterial(material);
+});
+
+test('скрытый предпросмотр ножа не изменяет размер и не запускает WebGL-рендер',()=>{
+  const preview=Object.create(SkinPreview.prototype);preview.canvas={clientWidth:0,clientHeight:0};preview.pixelRatio=1.75;
+  preview.renderer={setSize(){throw new Error('hidden preview rendered');}};preview.camera={};
+  assert.equal(preview.resize(),false);
 });
 
 test('керамбит имеет кольцо, изогнутый клинок и многоосевую анимацию осмотра',()=>{

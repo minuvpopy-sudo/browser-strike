@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { KNIFE_SKINS } from './KnifeSkinDefinitions.js';
-import { animateKnifeWaves, createKnifeBladeMaterial, disposeKnifeMaterial } from './KnifeMaterial.js';
+import { animateKnifeWaves, collectKnifeWaveMaterials, createKnifeBladeMaterial, disposeKnifeMaterial } from './KnifeMaterial.js';
 
 export class SkinPreview {
   constructor(canvas) {
@@ -9,7 +9,8 @@ export class SkinPreview {
     this.camera = new THREE.PerspectiveCamera(38, 1, .1, 30);
     this.camera.position.set(0, 1.1, 6);
     this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    this.pixelRatio = Math.min(devicePixelRatio, 1.75);
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.group = new THREE.Group();
     this.scene.add(this.group);
     this.scene.add(new THREE.HemisphereLight(0xf7e4bd, 0x26312b, 2.1));
@@ -19,6 +20,7 @@ export class SkinPreview {
     this.type = 'butterfly';
     this.skin = 'classic';
     this.inspectLeft = 0;
+    this.waveMaterials = [];
     this.lastFrame = performance.now();
     this.running = true;
     this.rebuild();
@@ -26,13 +28,17 @@ export class SkinPreview {
   }
 
   resize() {
-    const width = this.canvas.clientWidth || 480;
-    const height = this.canvas.clientHeight || 400;
-    if (this.canvas.width !== width * devicePixelRatio || this.canvas.height !== height * devicePixelRatio) {
+    const width = Math.floor(this.canvas.clientWidth);
+    const height = Math.floor(this.canvas.clientHeight);
+    if (width < 2 || height < 2) return false;
+    const expectedWidth = Math.floor(width * this.pixelRatio);
+    const expectedHeight = Math.floor(height * this.pixelRatio);
+    if (this.canvas.width !== expectedWidth || this.canvas.height !== expectedHeight) {
       this.renderer.setSize(width, height, false);
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
     }
+    return true;
   }
 
   set(type, skin) {
@@ -43,6 +49,7 @@ export class SkinPreview {
   }
 
   clearModel() {
+    this.waveMaterials = [];
     for (const child of [...this.group.children]) {
       child.traverse((object) => {
         object.geometry?.dispose();
@@ -148,6 +155,7 @@ export class SkinPreview {
       }
     }
     this.group.rotation.set(this.type === 'karambit' ? .18 : .25, this.type === 'karambit' ? -.34 : -.45, this.type === 'karambit' ? -.06 : -.12);
+    this.waveMaterials = collectKnifeWaveMaterials(this.group);
   }
 
   inspect() { this.inspectLeft = this.type === 'karambit' ? 2.2 : 1.5; }
@@ -157,8 +165,8 @@ export class SkinPreview {
     requestAnimationFrame((time) => this.animate(time));
     const dt = Math.min(.05, Math.max(0, (now - this.lastFrame) / 1000));
     this.lastFrame = now;
-    this.resize();
-    animateKnifeWaves(this.group, now / 1000);
+    if (!this.resize()) return;
+    if (this.waveMaterials?.length) animateKnifeWaves(this.waveMaterials, now / 1000);
 
     if (this.inspectLeft > 0) {
       const duration = this.type === 'karambit' ? 2.2 : 1.5;
