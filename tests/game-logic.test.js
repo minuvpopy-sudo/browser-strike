@@ -160,6 +160,15 @@ test('единичный скачок мыши не разворачивает �
   }finally{globalThis.document=originalDocument;}
 });
 
+test('запасной режим мыши сохраняет прицеливание и стрельбу без Pointer Lock',()=>{
+  const originalDocument=globalThis.document;const element={};globalThis.document={pointerLockElement:null};
+  try{
+    const input=new InputManager(element,{values:{keys:{}}});input.enabled=true;input.fallbackLook=true;let prevented=0;
+    input.onMouseMove({movementX:24,movementY:-8});input.onMouseDown({button:2,preventDefault(){prevented++;}});input.onMouseDown({button:0,preventDefault(){prevented++;}});
+    assert.deepEqual(input.consumeLook(),{x:24,y:-8});assert.equal(input.mouseButtons.has(2),true);assert.equal(input.mouseButtons.has(0),true);assert.equal(prevented,2);
+  }finally{globalThis.document=originalDocument;}
+});
+
 test('новая опубликованная версия автоматически обходит кэш браузера',async()=>{
   let replaced='';
   const updater=new AutoUpdater({
@@ -229,7 +238,10 @@ test('Ctrl и сочетания с ним перехватываются игр
   const input=new InputManager({},settings);input.enabled=true;let prevented=0;
   input.onKeyDown({code:'ControlRight',ctrlKey:true,preventDefault(){prevented++;}});
   input.onKeyDown({code:'KeyW',ctrlKey:true,preventDefault(){prevented++;}});
-  assert.equal(input.action('crouch'),true);assert.equal(input.action('forward'),true);assert.equal(prevented,2);
+  input.onKeyDown({code:'KeyV',ctrlKey:true,preventDefault(){prevented++;}});
+  input.onKeyDown({code:'F4',altKey:true,preventDefault(){prevented++;}});
+  input.onPaste({preventDefault(){prevented++;}});
+  assert.equal(input.action('crouch'),true);assert.equal(input.action('forward'),true);assert.equal(prevented,5);
   input.onKeyUp({code:'ControlRight'});assert.equal(input.action('crouch'),false);
 });
 
