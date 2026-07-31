@@ -28,7 +28,7 @@ import { PlayerInventory } from '../src/player/PlayerInventory.js';
 import { PlayerMovement } from '../src/player/PlayerMovement.js';
 import { AutoUpdater, versionedPageUrl } from '../src/core/AutoUpdater.js';
 import { selectSpectatorTarget, takeOverBotState } from '../src/core/SpectatorMode.js';
-import { SHOT_PROFILES, shotProfile } from '../src/core/AudioManager.js';
+import { SHOT_PROFILES, SHOT_SAMPLES, shotProfile } from '../src/core/AudioManager.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -375,5 +375,5 @@ test('подключение за бота переносит позицию, з
 
 test('Glock-18 использует отдельный многослойный профиль настоящего выстрела',()=>{
   const profile=shotProfile(WEAPONS.glock);
-  assert.equal(profile,SHOT_PROFILES.glock);assert.ok(profile.crack.duration<profile.tail.duration);assert.ok(profile.crack.lowpass>profile.tail.lowpass);assert.ok(profile.body.frequency>profile.body.endFrequency);assert.ok(profile.slide.delay>0);assert.equal(shotProfile(WEAPONS.ak47),null);
+  assert.equal(profile,SHOT_PROFILES.glock);assert.ok(profile.crack.duration<profile.tail.duration);assert.ok(profile.crack.lowpass>profile.tail.lowpass);assert.ok(profile.body.frequency>profile.body.endFrequency);assert.ok(profile.slide.delay>0);assert.equal(shotProfile(WEAPONS.ak47),null);assert.equal(SHOT_SAMPLES.glock.path,'audio/glock-shot.mp3');assert.ok(SHOT_SAMPLES.glock.duration<.7);
 });

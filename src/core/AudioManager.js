@@ -7,13 +7,17 @@ export const SHOT_PROFILES = Object.freeze({
   })
 });
 
+export const SHOT_SAMPLES = Object.freeze({
+  glock: Object.freeze({ path: 'audio/glock-shot.mp3', offset: .055, duration: .56, gain: .82 })
+});
+
 export function shotProfile(weapon) {
   const id = typeof weapon === 'string' ? weapon : weapon?.id;
   return SHOT_PROFILES[id] || null;
 }
 
 export class AudioManager {
-  constructor(settings) { this.settings = settings; this.context = null; this.master = null; this.unlocked = false; }
+  constructor(settings) { this.settings = settings; this.context = null; this.master = null; this.unlocked = false; this.samples = new Map(); this.samplePromises = new Map(); }
   unlock() {
     if (!this.context) {
       this.context = new (window.AudioContext || window.webkitAudioContext)();
@@ -21,6 +25,20 @@ export class AudioManager {
     }
     this.master.gain.value = this.settings.values.masterVolume / 100;
     this.context.resume(); this.unlocked = true;
+    for (const [id, sample] of Object.entries(SHOT_SAMPLES)) this.loadSample(id, sample.path);
+  }
+  loadSample(id, path) {
+    if (!this.context || this.samples.has(id)) return Promise.resolve(this.samples.get(id) || null);
+    if (this.samplePromises.has(id)) return this.samplePromises.get(id);
+    const base = typeof import.meta.env?.BASE_URL === 'string' ? import.meta.env.BASE_URL : '/';
+    const url = `${base}${path}`;
+    const request = fetch(url).then((response) => {
+      if (!response.ok) throw new Error(`Audio ${response.status}`);
+      return response.arrayBuffer();
+    }).then((data) => this.context.decodeAudioData(data)).then((buffer) => {
+      this.samples.set(id, buffer);return buffer;
+    }).catch(() => null).finally(() => this.samplePromises.delete(id));
+    this.samplePromises.set(id, request);return request;
   }
   tone(type = 'ui', options = {}) {
     if (!this.unlocked || !this.context) return;
@@ -45,6 +63,13 @@ export class AudioManager {
   }
   shot(power = 1, weapon = null) {
     if (!this.unlocked || !this.context) return;
+    const id = typeof weapon === 'string' ? weapon : weapon?.id;
+    const sample = SHOT_SAMPLES[id];
+    const sampleBuffer = this.samples.get(id);
+    if (sample && sampleBuffer) {
+      this.sampledShot(sampleBuffer, sample, power);
+      return;
+    }
     const profile = shotProfile(weapon);
     if (profile) {
       this.profiledShot(profile, power);
@@ -80,6 +105,22 @@ export class AudioManager {
     crack.connect(highpass).connect(lowpass).connect(crackGain).connect(this.master);
     crack.start(now);
     crack.stop(now + duration);
+  }
+  sampledShot(buffer, sample, power = 1) {
+    const now = this.context.currentTime;
+    const volume = (this.settings.values.shotsVolume ?? 80) / 100;
+    const strength = Math.max(.65, Math.min(1.35, power));
+    const offset = Math.min(sample.offset, Math.max(0, buffer.duration - .08));
+    const duration = Math.min(sample.duration, Math.max(.08, buffer.duration - offset));
+    const source = this.context.createBufferSource();
+    const gain = this.context.createGain();
+    const compressor = this.context.createDynamicsCompressor();
+    source.buffer = buffer;source.playbackRate.setValueAtTime(.992 + Math.random() * .016, now);
+    gain.gain.setValueAtTime(sample.gain * volume * strength, now);
+    gain.gain.setValueAtTime(sample.gain * volume * strength, now + Math.max(.01, duration - .09));
+    gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    compressor.threshold.setValueAtTime(-14, now);compressor.knee.setValueAtTime(10, now);compressor.ratio.setValueAtTime(5, now);compressor.attack.setValueAtTime(.001, now);compressor.release.setValueAtTime(.1, now);
+    source.connect(gain).connect(compressor).connect(this.master);source.start(now, offset, duration);source.stop(now + duration + .02);
   }
   profiledShot(profile, power = 1) {
     const now = this.context.currentTime;
