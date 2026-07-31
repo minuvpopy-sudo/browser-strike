@@ -27,6 +27,7 @@ import { SkinPreview } from '../src/skins/SkinPreview.js';
 import { PlayerInventory } from '../src/player/PlayerInventory.js';
 import { PlayerMovement } from '../src/player/PlayerMovement.js';
 import { AutoUpdater, versionedPageUrl } from '../src/core/AutoUpdater.js';
+import { selectSpectatorTarget, takeOverBotState } from '../src/core/SpectatorMode.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -352,4 +353,21 @@ test('керамбит имеет кольцо, изогнутый клинок 
   assert.ok(bladeSize.y>1.7);assert.ok(bladeSize.x>1.1);assert.ok(ring.geometry.parameters.radius>=.2);assert.ok(Math.abs(ring.rotation.x-Math.PI/2)<.001);assert.ok(pivot.position.z>.9);
   manager.drawTime=0;knife.inspecting=2;manager.update(.08);
   assert.notEqual(pivot.rotation.y,0);assert.notEqual(manager.group.rotation.z,manager.group.userData.baseRotation.z);
+});
+
+test('наблюдение выбирает только живого союзного бота и сохраняет выбранного',()=>{
+  const player={team:'attackers',position:new THREE.Vector3()};
+  const enemy={team:'defenders',alive:true,position:new THREE.Vector3(1,0,0)};
+  const far={team:'attackers',alive:true,position:new THREE.Vector3(8,0,0)};
+  const near={team:'attackers',alive:true,position:new THREE.Vector3(3,0,0)};
+  assert.equal(selectSpectatorTarget(player,[enemy,far,near]),near);
+  assert.equal(selectSpectatorTarget(player,[enemy,far,near],far),far);
+  near.alive=false;far.alive=false;assert.equal(selectSpectatorTarget(player,[enemy,far,near]),null);
+});
+
+test('подключение за бота переносит позицию, здоровье, оружие и бомбу игроку',()=>{
+  const knife={type:'karambit',skin:'waves'};const player=new Player('attackers',knife);player.alive=false;player.health=0;
+  const bot={team:'attackers',alive:true,state:'attack',position:new THREE.Vector3(12,0,-7),velocity:new THREE.Vector3(2,0,1),health:83,armor:64,helmet:true,defuseKit:false,money:2750,weapon:WEAPONS.ak47,ammo:17,reserve:43,hasBomb:true,bombSite:{id:'A'},group:{visible:true}};
+  const result=takeOverBotState(player,bot,knife);
+  assert.ok(result);assert.equal(player.alive,true);assert.deepEqual(player.position,bot.position);assert.equal(player.health,83);assert.equal(player.armor,64);assert.equal(player.inventory.active.definition.id,'ak47');assert.equal(player.inventory.active.ammo,17);assert.equal(player.inventory.active.reserve,43);assert.ok(player.inventory.slots.bomb);assert.equal(bot.alive,false);assert.equal(bot.group.visible,false);
 });
