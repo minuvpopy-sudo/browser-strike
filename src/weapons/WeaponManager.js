@@ -9,6 +9,28 @@ const easeOutBack = (t) => {
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 };
 
+const roundedBoxGeometry = ([width, height, depth], radius = .045) => {
+  const w = Math.max(.01, width);
+  const h = Math.max(.01, height);
+  const d = Math.max(.01, depth);
+  const r = Math.min(radius, w * .26, h * .26);
+  const shape = new THREE.Shape();
+  const left = -w / 2; const right = w / 2; const bottom = -h / 2; const top = h / 2;
+  shape.moveTo(left + r, bottom);
+  shape.lineTo(right - r, bottom); shape.quadraticCurveTo(right, bottom, right, bottom + r);
+  shape.lineTo(right, top - r); shape.quadraticCurveTo(right, top, right - r, top);
+  shape.lineTo(left + r, top); shape.quadraticCurveTo(left, top, left, top - r);
+  shape.lineTo(left, bottom + r); shape.quadraticCurveTo(left, bottom, left + r, bottom);
+  const bevel = Math.min(r * .38, d * .2);
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: Math.max(.004, d - bevel * 2), curveSegments: 3,
+    bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2
+  });
+  geometry.center();
+  geometry.userData.rounded = true;
+  return geometry;
+};
+
 export class WeaponManager extends EventTarget {
   constructor(camera, player, input, audio, skinManager) {
     super();
@@ -197,6 +219,7 @@ export class WeaponManager extends EventTarget {
     if (this.input.justPressed('inspect') && active?.inspect()) this.audio.click();
 
     this.scoped = Boolean(active?.definition?.scope && this.input.mouseButtons.has(2));
+    this.group.visible = !this.scoped;
     const down = this.input.mouseButtons.has(0);
     const auto = active?.definition?.mode === 'auto';
     if (down && (auto || !this.triggerDown)) this.fire(active, movement, camera, false);
@@ -306,26 +329,28 @@ export class WeaponManager extends EventTarget {
 
   buildGun(definition) {
     const skin = this.skinManager.weapon(definition.id);
-    const metal = new THREE.MeshStandardMaterial({ color: skin.colors[0], metalness: .52, roughness: .48, flatShading: true });
-    const dark = new THREE.MeshStandardMaterial({ color: skin.colors[1], metalness: .18, roughness: .82, flatShading: true });
-    const wood = new THREE.MeshStandardMaterial({ color: definition.id === 'ak47' ? 0x75451f : skin.colors[1], metalness: .04, roughness: .9, flatShading: true });
-    const detail = new THREE.MeshStandardMaterial({ color: 0x111412, metalness: .32, roughness: .7, flatShading: true });
+    const metal = new THREE.MeshStandardMaterial({ color: skin.colors[0], metalness: .58, roughness: .4 });
+    const dark = new THREE.MeshStandardMaterial({ color: skin.colors[1], metalness: .2, roughness: .7 });
+    const wood = new THREE.MeshStandardMaterial({ color: definition.id === 'ak47' ? 0x75451f : skin.colors[1], metalness: .04, roughness: .78 });
+    const detail = new THREE.MeshStandardMaterial({ color: 0x111412, metalness: .42, roughness: .54 });
+    const glass = new THREE.MeshStandardMaterial({ color: 0x426b72, metalness: .18, roughness: .16, emissive: 0x071315 });
     const long = ['rifles', 'machineguns'].includes(definition.category);
     const smg = definition.category === 'smgs';
     const shotgun = definition.category === 'shotguns';
     const pistol = definition.category === 'pistols';
     const machinegun = definition.category === 'machineguns';
-    const bodyLength = long ? .92 : smg || shotgun ? .72 : .52;
-    const barrelLength = long ? .62 : shotgun ? .58 : smg ? .4 : .34;
-    const addBox = (name, size, position, material = metal, rotation = [0, 0, 0]) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+    const sniper = ['scout','awp','g3sg1','sg550'].includes(definition.id);
+    const bodyLength = long ? (sniper ? 1.02 : .92) : smg || shotgun ? .72 : .52;
+    const barrelLength = long ? (['scout','awp'].includes(definition.id) ? .86 : .62) : shotgun ? .58 : smg ? .4 : .34;
+    const addBox = (name, size, position, material = metal, rotation = [0, 0, 0], radius = .045) => {
+      const mesh = new THREE.Mesh(roundedBoxGeometry(size, radius), material);
       mesh.name = name;
       mesh.position.set(...position);
       mesh.rotation.set(...rotation);
       this.group.add(mesh);
       return mesh;
     };
-    const addCylinder = (name, radii, length, position, material = detail, rotation = [Math.PI / 2, 0, 0], segments = 8) => {
+    const addCylinder = (name, radii, length, position, material = detail, rotation = [Math.PI / 2, 0, 0], segments = 14) => {
       const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radii[0], radii[1], length, segments), material);
       mesh.name = name;
       mesh.position.set(...position);
@@ -336,17 +361,31 @@ export class WeaponManager extends EventTarget {
 
     if (pistol) {
       const heavy = definition.id === 'deagle';
-      addBox('receiver', [heavy ? .32 : .27, .17, bodyLength], [-.005, .04, -bodyLength * .48], metal);
-      addBox('pistol-frame', [.25, .1, bodyLength * .72], [0, -.08, -bodyLength * .38], dark);
-      addBox('grip', [.2, .42, .24], [0, -.3, -.08], dark, [-.2, 0, 0]);
-      addCylinder('barrel', [heavy ? .045 : .034, heavy ? .052 : .042], barrelLength, [0, .035, -bodyLength - barrelLength * .45]);
-      addBox('front-sight', [.045, .055, .055], [0, .165, -bodyLength * .9], detail);
-      addBox('rear-sight', [.11, .045, .045], [0, .16, -.12], detail);
-      const triggerGuard = new THREE.Mesh(new THREE.TorusGeometry(.1, .018, 4, 10, Math.PI), detail);
-      triggerGuard.name = 'trigger-guard';
-      triggerGuard.rotation.set(0, Math.PI / 2, Math.PI / 2);
-      triggerGuard.position.set(0, -.14, -.2);
-      this.group.add(triggerGuard);
+      const compact = definition.id === 'p228';
+      const longSlide = ['fiveseven','usp'].includes(definition.id);
+      const slideLength = heavy ? .68 : compact ? .48 : longSlide ? .59 : .54;
+      const buildPistol = (x, secondary = false) => {
+        const prefix = secondary ? 'dual-' : '';
+        addBox(secondary?'receiver-dual':'receiver',[heavy ? .36 : .29,heavy ? .2 : .17,slideLength],[x,.055,-slideLength*.46],metal,[0,secondary ? .045 : -.025,0],heavy ? .055 : .038);
+        addBox(`${prefix}pistol-frame`,[heavy ? .31 : .255,.115,slideLength*.72],[x,-.085,-slideLength*.38],dark,[0,secondary ? .045 : -.025,0],.04);
+        addBox(`${prefix}grip`,[heavy ? .235 : .205,.44,.255],[x,-.31,-.075],dark,[-.22,secondary ? .045 : -.025,0],.065);
+        addBox(`${prefix}grip-inlay`,[heavy ? .19 : .165,.3,.262],[x,-.315,-.07],detail,[-.22,secondary ? .045 : -.025,0],.055);
+        addCylinder(`${prefix}barrel`,[heavy ? .052 : .037,heavy ? .058 : .043],heavy ? .46 : .34,[x,.045,-slideLength-.14],detail,[Math.PI/2,0,0],18);
+        addBox(`${prefix}front-sight`,[.045,.065,.06],[x,.18,-slideLength*.91],detail,[0,0,0],.012);
+        addBox(`${prefix}rear-sight`,[.13,.05,.055],[x,.175,-.11],detail,[0,0,0],.012);
+        addBox(`${prefix}ejection-port`,[heavy ? .22 : .17,.018,.15],[x+.01,.151,-slideLength*.48],detail,[0,0,0],.008);
+        for(let i=0;i<4;i++)addBox(`${prefix}slide-serration-${i}`,[heavy ? .31 : .255,.025,.022],[x,.075,-.12-i*.042],detail,[0,0,0],.005);
+        const triggerGuard=new THREE.Mesh(new THREE.TorusGeometry(heavy ? .115 : .1,.018,8,20,Math.PI),detail);
+        triggerGuard.name=`${prefix}trigger-guard`;triggerGuard.rotation.set(0,Math.PI/2,Math.PI/2);triggerGuard.position.set(x,-.145,-.2);this.group.add(triggerGuard);
+        const trigger=new THREE.Mesh(new THREE.TorusGeometry(.055,.012,6,14,Math.PI*.72),metal);
+        trigger.name=`${prefix}trigger`;trigger.rotation.set(0,Math.PI/2,Math.PI/2);trigger.position.set(x,-.14,-.2);this.group.add(trigger);
+      };
+      if(definition.id==='elites'){buildPistol(-.15);buildPistol(.17,true);}else buildPistol(0);
+      if(definition.id==='usp'){
+        addCylinder('usp-suppressor',[.07,.062],.48,[0,.045,-.92],detail,[Math.PI/2,0,0],20);
+        addCylinder('usp-suppressor-cap',[.073,.073],.045,[0,.045,-1.16],metal,[Math.PI/2,0,0],20);
+      }
+      if(heavy){addBox('deagle-barrel-rib',[.28,.065,.42],[0,.18,-.48],detail,[0,0,0],.025);addCylinder('deagle-muzzle',[.075,.062],.13,[0,.045,-.98],metal,[Math.PI/2,0,0],20);}
     } else {
       addBox('receiver', [.3, .25, bodyLength], [0, .01, -bodyLength * .43], metal);
       addBox('receiver-top', [.26, .09, bodyLength * .72], [0, .18, -bodyLength * .47], detail);
@@ -385,6 +424,51 @@ export class WeaponManager extends EventTarget {
         addBox('m4-front-sight-base', [.18, .22, .12], [0, .17, -1.2], dark);
         addBox('m4-front-sight-post', [.045, .13, .045], [0, .34, -1.2], metal);
         addCylinder('m4-muzzle-brake', [.053, .045], .17, [0, .055, -1.52], metal);
+      } else if (definition.id === 'galil') {
+        addBox('galil-stock',[.34,.3,.62],[0,-.01,.38],wood,[-.08,0,0],.075);
+        addBox('galil-buttpad',[.37,.34,.1],[0,-.03,.69],detail,[-.08,0,0],.04);
+        addBox('galil-handguard',[.34,.23,.55],[0,-.01,-.9],wood,[.02,0,0],.07);
+        addBox('galil-carry-handle',[.13,.15,.4],[0,.31,-.43],detail,[0,0,0],.035);
+        addBox('galil-magazine',[.22,.5,.24],[0,-.4,-.34],detail,[-.17,0,0],.045);
+        addCylinder('galil-gas-tube',[.03,.03],.62,[0,.2,-1.02],detail);
+      } else if (definition.id === 'famas') {
+        addBox('famas-bullpup-stock',[.42,.43,.72],[0,-.03,.18],dark,[-.04,0,0],.11);
+        addBox('famas-cheek-rest',[.34,.13,.58],[0,.22,.1],metal,[0,0,0],.055);
+        addBox('famas-handguard',[.34,.28,.62],[0,.01,-.89],dark,[0,0,0],.085);
+        addBox('famas-carry-handle',[.16,.18,.72],[0,.34,-.46],detail,[0,0,0],.045);
+        addBox('famas-rear-magazine',[.2,.43,.22],[0,-.35,.13],metal,[.08,0,0],.04);
+        for(const z of [-.74,-.9,-1.06])addCylinder('famas-handguard-vent',[.027,.027],.36,[0,.13,z],detail,[0,0,Math.PI/2],10);
+      } else if (definition.id === 'aug') {
+        addBox('aug-bullpup-body',[.44,.46,.78],[0,-.03,.08],dark,[-.025,0,0],.13);
+        addBox('aug-cheek-rest',[.37,.14,.6],[0,.24,.08],metal,[0,0,0],.06);
+        addBox('aug-rear-magazine',[.2,.46,.24],[0,-.36,.17],glass,[.1,0,0],.045);
+        addBox('aug-handguard',[.31,.24,.55],[0,.02,-.86],metal,[0,0,0],.08);
+        addCylinder('aug-foregrip',[.045,.055],.34,[0,-.3,-.91],dark,[0,0,0],16);
+        addBox('aug-trigger-frame',[.26,.25,.3],[0,-.22,-.36],dark,[0,0,0],.09);
+      } else if (definition.id === 'sg552') {
+        addBox('sg552-stock',[.32,.31,.58],[0,-.02,.36],dark,[-.07,0,0],.08);
+        addBox('sg552-handguard',[.37,.25,.58],[0,-.01,-.88],dark,[0,0,0],.075);
+        for(const z of [-.72,-.88,-1.04])addBox('sg552-handguard-slot',[.39,.035,.07],[0,.13,z],metal,[0,0,0],.012);
+        addBox('sg552-magazine-upper',[.23,.3,.22],[0,-.29,-.35],detail,[-.12,0,0],.04);
+        addBox('sg552-magazine-lower',[.21,.28,.2],[0,-.52,-.26],detail,[-.34,0,0],.04);
+        addCylinder('sg552-gas-system',[.032,.032],.57,[0,.2,-.98],detail);
+      } else if (definition.id === 'scout' || definition.id === 'awp') {
+        const awp=definition.id==='awp';
+        addBox(`${definition.id}-stock`,[awp ? .39 : .34,awp ? .34 : .29,.7],[0,-.01,.42],awp?dark:wood,[-.07,0,0],.1);
+        addBox(`${definition.id}-cheek-rest`,[.3,.12,.42],[0,.23,.36],dark,[0,0,0],.055);
+        addBox(`${definition.id}-handguard`,[awp ? .36 : .3,awp ? .25 : .2,.68],[0,.01,-1.0],awp?dark:wood,[0,0,0],.075);
+        addBox(`${definition.id}-magazine`,[awp ? .24 : .19,awp ? .38 : .3,.24],[0,-.32,-.35],detail,[-.08,0,0],.05);
+        addCylinder(`${definition.id}-bolt`,[.025,.025],.2,[.2,.16,-.25],metal,[0,0,Math.PI/2],12);
+        const boltKnob=new THREE.Mesh(new THREE.SphereGeometry(.055,12,8),detail);boltKnob.name=`${definition.id}-bolt-knob`;boltKnob.position.set(.3,.16,-.25);this.group.add(boltKnob);
+        if(awp)addCylinder('awp-heavy-barrel',[.055,.065],.78,[0,.055,-1.57],detail,[Math.PI/2,0,0],20);
+      } else if (definition.id === 'g3sg1' || definition.id === 'sg550') {
+        const g3=definition.id==='g3sg1';
+        addBox(`${definition.id}-marksman-stock`,[.36,.34,.68],[0,-.01,.42],g3?wood:dark,[-.065,0,0],.09);
+        addBox(`${definition.id}-handguard`,[.36,.24,.67],[0,.01,-1.0],g3?wood:dark,[0,0,0],.075);
+        addBox(`${definition.id}-magazine`,[.23,g3 ? .42 : .5,.25],[0,g3 ? -.36 : -.4,-.35],detail,[-.12,0,0],.05);
+        addCylinder(`${definition.id}-bipod-left`,[.018,.024],.55,[-.14,-.24,-1.16],detail,[0,0,-.35],10);
+        addCylinder(`${definition.id}-bipod-right`,[.018,.024],.55,[.14,-.24,-1.16],detail,[0,0,.35],10);
+        addBox(`${definition.id}-cheek-rest`,[.3,.12,.38],[0,.23,.38],dark,[0,0,0],.05);
       } else {
         const stockMaterial = ['galil', 'scout'].includes(definition.id) ? wood : dark;
         addBox('stock', [.29, .25, smg ? .38 : .56], [0, -.01, smg ? .27 : .34], stockMaterial, [-.07, 0, 0]);
@@ -402,9 +486,13 @@ export class WeaponManager extends EventTarget {
       }
 
       if (definition.scope) {
-        addCylinder('scope', [.085, .085], .42, [0, .31, -bodyLength * .45], detail, [Math.PI / 2, 0, 0], 10);
-        addCylinder('scope-front', [.105, .105], .11, [0, .31, -bodyLength * .66], detail, [Math.PI / 2, 0, 0], 10);
-        addBox('scope-mount', [.12, .1, .24], [0, .21, -bodyLength * .44], dark);
+        const scopeLength=['awp','scout','g3sg1','sg550'].includes(definition.id) ? .55 : .43;
+        addCylinder('scope', [.087, .095], scopeLength, [0, .33, -bodyLength * .45], detail, [Math.PI / 2, 0, 0], 20);
+        addCylinder('scope-front', [.125, .105], .14, [0, .33, -bodyLength * .45-scopeLength*.43], detail, [Math.PI / 2, 0, 0], 20);
+        addCylinder('scope-rear', [.115, .1], .12, [0, .33, -bodyLength * .45+scopeLength*.45], detail, [Math.PI / 2, 0, 0], 20);
+        addCylinder('scope-lens', [.096, .096], .012, [0, .33, -bodyLength * .45-scopeLength*.51], glass, [Math.PI / 2, 0, 0], 20);
+        addBox('scope-mount-front', [.12, .13, .09], [0, .21, -bodyLength * .58], dark,[0,0,0],.025);
+        addBox('scope-mount-rear', [.12, .13, .09], [0, .21, -bodyLength * .32], dark,[0,0,0],.025);
       } else {
         addBox('rear-sight', [.11, .08, .08], [0, .26, -.18], detail);
         addBox('front-sight', [.07, .11, .07], [0, .22, -bodyLength - barrelLength * .7], detail);

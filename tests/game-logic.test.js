@@ -12,6 +12,7 @@ import { Knife } from '../src/weapons/Knife.js';
 import { CollisionWorld } from '../src/map/CollisionWorld.js';
 import { BotNavigation } from '../src/bots/BotNavigation.js';
 import { BotCombat } from '../src/bots/BotCombat.js';
+import { BotAI } from '../src/bots/BotAI.js';
 import { BOT_FRONTLINE_SPAWNS } from '../src/bots/BotManager.js';
 import { Player } from '../src/player/Player.js';
 import { Bot } from '../src/bots/Bot.js';
@@ -93,10 +94,10 @@ test('игрок защищён от мгновенной смерти посл�
   player.spawnProtectedUntil=0;player.takeDamage(40,{});assert.equal(player.health,COMBAT.maxHealth-40);
 });
 
-test('передового врага может ранить игрок, но не боты-союзники',()=>{
+test('боты разных команд могут ранить и убивать друг друга',()=>{
   const scene=new THREE.Scene();const bot=new Bot('Цель','defenders',scene,0);bot.playerTarget=true;bot.spawn({x:0,z:0});
-  bot.takeDamage(120,{isPlayer:false});assert.equal(bot.health,COMBAT.maxHealth);
-  bot.takeDamage(40,{isPlayer:true});assert.equal(bot.health,COMBAT.maxHealth-40);bot.dispose();
+  bot.spawnProtectedUntil=0;bot.takeDamage(40,{isPlayer:false,team:'attackers'});assert.equal(bot.health,COMBAT.maxHealth-40);
+  bot.takeDamage(COMBAT.maxHealth,{isPlayer:false,team:'attackers'});assert.equal(bot.alive,false);bot.dispose();
 });
 
 test('все боты, включая передового, закупают оружие и снаряжение при появлении',()=>{
@@ -207,6 +208,24 @@ test('бот после реакции расходует патрон и соз
   assert.equal(unwantedSounds,0);
 });
 
+test('бот замечает врага, стрейфит и стреляет в ответ',()=>{
+  const scene=new THREE.Scene();const bot=new Bot('Охотник','defenders',scene,2);bot.spawn({x:0,z:0});bot.weapon=WEAPONS.m4a1;bot.ammo=30;bot.state='patrol';bot.spawnProtectedUntil=0;
+  const enemy={team:'attackers',alive:true,isPlayer:false,position:new THREE.Vector3(0,0,10),armor:0,helmet:false,takeDamage(){return false;}};
+  const collision={bounds:{minX:-30,maxX:30,minZ:-30,maxZ:30},segmentBlocked:()=>false,intersects:()=>false,moveCircle:(p,d)=>({x:p.x+d.x,z:p.z+d.z,blockedX:false,blockedZ:false})};
+  const graph={nodes:new Map([['center',{x:0,z:0}],['left',{x:-10,z:8}],['right',{x:10,z:8}]]),path:()=>[]};
+  const ai=new BotAI(bot,graph,collision,'expert',null);for(let i=0;i<14;i++)ai.update(.1,[enemy],new THREE.Vector3(0,0,20),null);
+  assert.ok(bot.ammo<30);assert.ok(['attack','see-enemy','return-fire'].includes(bot.state));assert.ok(Math.abs(bot.position.x)>.05);bot.dispose();
+});
+
+test('бот не знает позицию врага за стеной и вместо погони проверяет маршрут',()=>{
+  const scene=new THREE.Scene();const bot=new Bot('Разведчик','attackers',scene,1);bot.spawn({x:0,z:0});bot.state='patrol';
+  const hiddenEnemy={team:'defenders',alive:true,isPlayer:false,position:new THREE.Vector3(20,0,0)};
+  const collision={bounds:{minX:-30,maxX:30,minZ:-30,maxZ:30},segmentBlocked:()=>true,intersects:()=>false,moveCircle:(p,d)=>({x:p.x+d.x,z:p.z+d.z,blockedX:false,blockedZ:false})};
+  const graph={nodes:new Map([['a',{x:0,z:0}],['b',{x:0,z:12}],['c',{x:-12,z:5}]]),path:()=>[]};
+  const ai=new BotAI(bot,graph,collision,'normal',null);ai.update(.2,[hiddenEnemy],new THREE.Vector3(0,0,18),null);
+  assert.equal(ai.target,null);assert.equal(bot.lastSeen,null);assert.ok(ai.patrolTarget);assert.ok(ai.navigation.target.distanceToSquared(hiddenEnemy.position)>4);bot.dispose();
+});
+
 test('меню покупки не пересоздаёт кнопки каждый кадр',()=>{
   const menu=Object.create(BuyMenu.prototype);let renders=0,statusUpdates=0;
   menu.root={classList:{contains:()=>true}};menu.category='rifles';menu.itemsKey='';
@@ -272,11 +291,11 @@ test('меню покупки активирует товар одним соб�
   assert.equal(item,WEAPONS.ak47);
 });
 
-test('классическая модель AK имеет приклад, магазин и угловатые материалы',()=>{
+test('классическая модель AK имеет приклад, магазин и скруглённые края',()=>{
   const gun=new Firearm(WEAPONS.ak47);const player={alive:true,velocity:new THREE.Vector3(),inventory:{active:gun}};const camera=new THREE.Group();
   const manager=new WeaponManager(camera,player,{}, {}, {weapon:()=>({colors:[0x343a34,0x151816]})});
   assert.ok(manager.group.getObjectByName('wood-stock'));assert.ok(manager.group.getObjectByName('magazine-lower'));
-  assert.equal(manager.group.getObjectByName('receiver').material.flatShading,true);
+  assert.equal(manager.group.getObjectByName('receiver').geometry.userData.rounded,true);assert.notEqual(manager.group.getObjectByName('receiver').geometry.type,'BoxGeometry');
 });
 
 test('основные винтовки имеют отдельные классические модели AK-47 и M4A4',()=>{
@@ -285,6 +304,30 @@ test('основные винтовки имеют отдельные класс
   assert.ok(akManager.group.getObjectByName('wood-upper-handguard'));assert.ok(akManager.group.getObjectByName('magazine-middle'));assert.ok(akManager.group.getObjectByName('ak-muzzle-brake'));
   const m4Manager=new WeaponManager(new THREE.Group(),{alive:true,velocity:new THREE.Vector3(),inventory:{active:new Firearm(WEAPONS.m4a1)}},{},{},skinManager);
   assert.equal(WEAPONS.m4a1.name,'M4A4');assert.ok(m4Manager.group.getObjectByName('m4-stock'));assert.ok(m4Manager.group.getObjectByName('m4-handguard'));assert.ok(m4Manager.group.getObjectByName('m4-carry-handle'));assert.ok(m4Manager.group.getObjectByName('m4-magazine'));
+});
+
+test('все винтовки имеют сглаженные корпуса и свои узнаваемые детали',()=>{
+  const skinManager={weapon:()=>({colors:[0x343a34,0x151816]})};
+  const markers={ak47:'wood-stock',m4a1:'m4-stock',galil:'galil-stock',famas:'famas-bullpup-stock',scout:'scout-bolt',awp:'awp-heavy-barrel',sg552:'sg552-stock',aug:'aug-bullpup-body',g3sg1:'g3sg1-marksman-stock',sg550:'sg550-marksman-stock'};
+  for(const definition of Object.values(WEAPONS).filter((weapon)=>weapon.category==='rifles')){
+    const manager=new WeaponManager(new THREE.Group(),{alive:true,velocity:new THREE.Vector3(),inventory:{active:new Firearm(definition)}},{},{},skinManager);
+    assert.equal(manager.group.getObjectByName('receiver').geometry.userData.rounded,true,definition.id);assert.ok(manager.group.getObjectByName(markers[definition.id]),definition.id);
+  }
+});
+
+test('пистолеты не состоят из квадратных блоков и имеют свои детали',()=>{
+  const skinManager={weapon:()=>({colors:[0x343a34,0x151816]})};
+  for(const definition of Object.values(WEAPONS).filter((weapon)=>weapon.category==='pistols')){
+    const manager=new WeaponManager(new THREE.Group(),{alive:true,velocity:new THREE.Vector3(),inventory:{active:new Firearm(definition)}},{},{},skinManager);
+    assert.equal(manager.group.getObjectByName('receiver').geometry.userData.rounded,true,definition.id);assert.ok(manager.group.getObjectByName('ejection-port'),definition.id);
+    if(definition.id==='usp')assert.ok(manager.group.getObjectByName('usp-suppressor'));if(definition.id==='elites')assert.ok(manager.group.getObjectByName('receiver-dual'));
+  }
+});
+
+test('оптический прицел скрывает модель винтовки и включает режим перекрестия',()=>{
+  const gun=new Firearm(WEAPONS.awp);const inventory={active:gun,equip(){},quickSwap(){},cycle(){}};const player={alive:true,velocity:new THREE.Vector3(),inventory};
+  const input={justPressed:()=>false,consumeWheel:()=>0,mouseButtons:new Set([2])};const manager=new WeaponManager(new THREE.Group(),player,input,{},{weapon:()=>({colors:[0x343a34,0x151816]})});
+  manager.handleInput({speed:0,crouched:false,grounded:true},{direction:()=>new THREE.Vector3(0,0,-1)});assert.equal(manager.scoped,true);assert.equal(manager.group.visible,false);assert.ok(manager.group.getObjectByName('scope-lens'));
 });
 
 test('скин «Волны» создаёт анимированный чёрно-синий металлический материал',()=>{

@@ -39,12 +39,12 @@ export class Bot {
     this.position.set(point.x, 0, point.z); this.group.position.copy(this.position); this.group.visible = true;
     this.health = this.maxHealth; this.armor = 0; this.helmet = false; this.alive = true; this.state = 'buy'; this.hasBomb = false; this.bombSite = null; this.defuseKit = false;
     this.weapon = WEAPONS[this.team === 'attackers' ? 'glock' : 'usp'];
-    this.reloadTime = 0; this.flashTime = 0; this.ammo = this.weapon.mag; this.reserve = this.weapon.reserve; this.spawnProtectedUntil = performance.now() + 2500;
+    this.reloadTime = 0; this.flashTime = 0; this.ammo = this.weapon.mag; this.reserve = this.weapon.reserve; this.lastSeen = null; this.lastAttacker = null; this.spawnProtectedUntil = performance.now() + 2500;
     this.buy();
   }
 
   takeDamage(amount, source) {
-    if (!this.alive || source && !source.isPlayer && (this.playerTarget || performance.now() < this.spawnProtectedUntil)) return false;
+    if (!this.alive || source && !source.isPlayer && performance.now() < this.spawnProtectedUntil) return false;
     this.health = Math.max(0, this.health - amount);
     if (this.health === 0) {
       this.alive = false; this.deaths++; this.state = 'dead'; this.group.visible = false; this.hasBomb = false;
