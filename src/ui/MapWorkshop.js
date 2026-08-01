@@ -39,17 +39,21 @@ export class MapWorkshop extends EventTarget {
       this.elements.viewport.append(this.renderer.domElement);this.scene = new THREE.Scene();this.scene.background = new THREE.Color(0x17201b);
       this.camera = new THREE.PerspectiveCamera(48, 1, .1, 2000);this.scene.add(new THREE.HemisphereLight(0xe6f1ff, 0x263128, 2.2));
       const sun = new THREE.DirectionalLight(0xffe3ae, 3);sun.position.set(-30, 60, 25);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);this.scene.add(sun);this.scene.add(this.objectGroup);
-      this.materialLibrary=createAtlasMaterials({anisotropy:4});this.editorMaterials=this.materialLibrary.materials;
       this.renderer.domElement.addEventListener('pointerdown', (event) => this.onPointerDown(event));
       this.renderer.domElement.addEventListener('pointermove', (event) => this.onPointerMove(event));
       window.addEventListener('pointerup', () => { this.dragging = false; });
       this.renderer.domElement.addEventListener('wheel', (event) => { event.preventDefault();this.zoom = THREE.MathUtils.clamp(this.zoom + Math.sign(event.deltaY) * .1, .55, 2.1);this.updateCamera(); }, { passive: false });
       this.renderer.domElement.addEventListener('contextmenu', (event) => event.preventDefault());
-      this.resizeObserver = new ResizeObserver(() => this.resize());this.resizeObserver.observe(this.elements.viewport);this.renderer.setAnimationLoop(() => { if (this.active) this.renderer.render(this.scene, this.camera); });
+      this.resizeObserver = new ResizeObserver(() => this.resize());this.resizeObserver.observe(this.elements.viewport);
     } catch (error) { this.setStatus('3D-редактор недоступен в этом браузере', 'error');console.error(error); }
   }
 
-  onScreen(id) { this.active = id === 'workshop-menu';if (this.active) { this.resize();this.renderLibrary();this.rebuildScene(); } }
+  onScreen(id) {
+    this.active = id === 'workshop-menu';
+    if (!this.active) { this.renderer?.setAnimationLoop(null);return; }
+    if (!this.materialLibrary) { this.materialLibrary=createAtlasMaterials({anisotropy:4});this.editorMaterials=this.materialLibrary.materials; }
+    this.resize();this.renderLibrary();this.rebuildScene();this.renderWorkshop??=()=>this.renderer.render(this.scene,this.camera);this.renderer.setAnimationLoop(this.renderWorkshop);
+  }
 
   newMap(showStatus = true) {
     this.map = createWorkshopMap({ author: this.elements.author.value || 'Игрок' });this.selectedId = null;this.syncFields();this.rebuildScene();if (showStatus) this.setStatus('Создан новый черновик карты');
@@ -112,7 +116,7 @@ export class MapWorkshop extends EventTarget {
   clearAll() { if (!this.map?.objects.length) return this.setStatus('Карта уже пустая');if (!globalThis.confirm?.('Удалить со сцены все стены, ящики и рампы?')) return;this.map = sanitizeWorkshopMap({ ...this.map, objects: [] });this.selectedId = null;this.rebuildScene();this.setStatus('Все объекты карты удалены', 'success'); }
 
   rebuildScene() {
-    if (!this.scene || !this.map) return;
+    if (!this.scene || !this.map || !this.editorMaterials) return;
     for (const child of [...this.objectGroup.children]) { this.objectGroup.remove(child);child.traverse((object) => { object.geometry?.dispose?.();if(object.userData.workshopOwnedMaterial){if(Array.isArray(object.material))object.material.forEach((material)=>material.dispose?.());else object.material?.dispose?.();} }); }
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(this.map.size.width, this.map.size.depth), this.editorMaterials[this.map.floorMaterial] || this.editorMaterials.ground);floor.rotation.x = -Math.PI / 2;floor.position.y = -.02;floor.receiveShadow=true;this.objectGroup.add(floor);
     const grid = new THREE.GridHelper(Math.max(this.map.size.width, this.map.size.depth), Math.round(Math.max(this.map.size.width, this.map.size.depth) / 4), 0x8eaa70, 0x405044);grid.position.y = .015;grid.userData.workshopOwnedMaterial=true;this.objectGroup.add(grid);
