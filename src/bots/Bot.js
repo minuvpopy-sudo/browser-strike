@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { COMBAT, ECONOMY, awardMoney } from '../config/MatchRules.js';
 import { WEAPONS } from '../weapons/WeaponDefinitions.js';
+import { animateCharacterLegs, createCharacterModel } from '../characters/CharacterModel.js';
 
 export class Bot {
   constructor(name, team, scene, index = 0) {
@@ -15,24 +16,7 @@ export class Bot {
   }
 
   createModel() {
-    const group = new THREE.Group();
-    const isAttacker = this.team === 'attackers';
-    const uniform = new THREE.MeshStandardMaterial({ color: isAttacker ? 0xa45d24 : 0x176fc1, emissive: isAttacker ? 0x2d1306 : 0x082a52, emissiveIntensity: 0.28, roughness: 0.8 });
-    const dark = new THREE.MeshStandardMaterial({ color: 0x252823, roughness: 0.9 });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.9, 0.42), uniform);
-    body.position.y = 1; body.userData = { entity: this, zone: 'chest' }; group.add(body);
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.46, 0.44), new THREE.MeshStandardMaterial({ color: 0xb58d6d, roughness: 1 }));
-    head.position.y = 1.68; head.userData = { entity: this, zone: 'head' }; group.add(head);
-    for (const x of [-0.23, 0.23]) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.72, 0.26), dark);
-      leg.position.set(x, 0.37, 0); leg.userData = { entity: this, zone: 'legs' }; group.add(leg);
-    }
-    const gun = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.68), dark);
-    gun.name = 'weapon'; gun.position.set(0.24, 1.18, 0.24); gun.userData = { entity: this, zone: 'arms' }; group.add(gun);
-    const shotLight = new THREE.PointLight(0xffb04c, 0, 4);
-    shotLight.name = 'shot-light'; shotLight.position.set(0.24, 1.18, 0.62); group.add(shotLight);
-    group.traverse((object) => { if (object.isMesh) { object.castShadow = true; object.receiveShadow = true; } });
-    return group;
+    return createCharacterModel(this,this.team,{name:`bot-${this.team}`});
   }
 
   spawn(point) {
@@ -91,9 +75,7 @@ export class Bot {
     if (!this.alive) return;
     this.group.position.copy(this.position);
     const speed = Math.hypot(this.velocity.x, this.velocity.z);
-    this.group.children.slice(2, 4).forEach((leg, index) => {
-      leg.rotation.x = Math.sin(performance.now() * 0.009 + index * Math.PI) * Math.min(0.55, speed * 0.1);
-    });
+    animateCharacterLegs(this.group,speed);
     this.flashTime = Math.max(0, this.flashTime - dt);
     const shotLight = this.group.getObjectByName('shot-light');
     if (shotLight) shotLight.intensity = this.flashTime > 0 ? 4 : 0;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { COMBAT, ECONOMY, awardMoney } from '../config/MatchRules.js';
 import { WEAPONS } from '../weapons/WeaponDefinitions.js';
+import { animateCharacterLegs, createCharacterModel } from '../characters/CharacterModel.js';
 
 function finite(value, fallback = 0) {
   return Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -37,32 +38,7 @@ export class RemotePlayer {
   }
 
   createModel() {
-    const group = new THREE.Group();
-    group.name = 'online-opponent';
-    const attacker = this.team === 'attackers';
-    const uniform = new THREE.MeshStandardMaterial({ color: attacker ? 0xa45d24 : 0x176fc1, emissive: attacker ? 0x2d1306 : 0x082a52, emissiveIntensity: .25, roughness: .78 });
-    const dark = new THREE.MeshStandardMaterial({ color: 0x252823, roughness: .88 });
-    const skin = new THREE.MeshStandardMaterial({ color: 0xb58d6d, roughness: 1 });
-    const addPart = (name, geometry, material, position, zone) => {
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.name = name;
-      mesh.position.set(...position);
-      mesh.userData = { entity: this, zone };
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      group.add(mesh);
-      return mesh;
-    };
-    addPart('body', new THREE.BoxGeometry(.72, .9, .42), uniform, [0, 1, 0], 'chest');
-    addPart('head', new THREE.BoxGeometry(.46, .46, .44), skin, [0, 1.68, 0], 'head');
-    addPart('leg-left', new THREE.BoxGeometry(.23, .72, .26), dark, [-.23, .37, 0], 'legs');
-    addPart('leg-right', new THREE.BoxGeometry(.23, .72, .26), dark, [.23, .37, 0], 'legs');
-    addPart('weapon', new THREE.BoxGeometry(.14, .1, .68), dark, [.24, 1.18, .24], 'arms');
-    const light = new THREE.PointLight(0xffb04c, 0, 4);
-    light.name = 'shot-light';
-    light.position.set(.24, 1.18, .62);
-    group.add(light);
-    return group;
+    return createCharacterModel(this,this.team,{name:'online-opponent'});
   }
 
   applyState(state = {}) {
@@ -126,10 +102,7 @@ export class RemotePlayer {
     delta = Math.atan2(Math.sin(delta), Math.cos(delta));
     this.group.rotation.y += delta * Math.min(1, dt * 16);
     const speed = Math.hypot(this.velocity.x, this.velocity.z);
-    for (const [index, name] of ['leg-left', 'leg-right'].entries()) {
-      const leg = this.group.getObjectByName(name);
-      if (leg) leg.rotation.x = Math.sin(performance.now() * .009 + index * Math.PI) * Math.min(.55, speed * .08);
-    }
+    animateCharacterLegs(this.group,speed);
     const body = this.group.getObjectByName('body');
     const head = this.group.getObjectByName('head');
     if (body) body.position.y = this.crouched ? .76 : 1;

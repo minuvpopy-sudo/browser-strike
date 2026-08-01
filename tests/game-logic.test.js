@@ -167,6 +167,8 @@ test('все боты, включая передового, закупают о�
   const defender=new Bot('Опора','defenders',scene,1);defender.money=3400;defender.spawn({x:0,z:0});
   assert.equal(defender.weapon,WEAPONS.famas);assert.equal(defender.defuseKit,true);assert.equal(defender.armor,100);
   assert.ok(defender.group.getObjectByName('weapon').scale.z>1);
+  assert.equal(attacker.group.getObjectByName('body').geometry.type,'CapsuleGeometry');assert.equal(attacker.group.getObjectByName('leg-left').geometry.type,'CapsuleGeometry');assert.ok(attacker.group.getObjectByName('upper-arm-left'));assert.ok(attacker.group.getObjectByName('sunglasses-left'));assert.ok(attacker.group.getObjectByName('chest-emblem'));
+  assert.equal(attacker.group.getObjectByName('body').userData.zone,'chest');assert.equal(attacker.group.getObjectByName('head').userData.zone,'head');assert.equal(attacker.group.getObjectByName('weapon-receiver').geometry.type,'CapsuleGeometry');
   attacker.dispose();defender.dispose();
 });
 
@@ -370,7 +372,7 @@ test('AWP имеет светлый авторский скин, крупную 
   const skinManager={weapon:()=>({colors:[0x111111,0x222222]})};const manager=new WeaponManager(new THREE.Group(),{alive:true,velocity:new THREE.Vector3(),inventory:{active:new Firearm(WEAPONS.awp)}},{},{},skinManager);
   assert.equal(manager.group.getObjectByName('receiver').material.color.getHex(),0xe3e9b8);assert.ok(manager.group.getObjectByName('awp-stock-accent'));assert.ok(manager.group.getObjectByName('awp-buttpad'));
   assert.ok(manager.group.getObjectByName('awp-skin-decal-right'));assert.ok(manager.group.getObjectByName('awp-skin-decal-left'));assert.ok(manager.group.getObjectByName('awp-scope-orange-ring-front'));
-  assert.equal(manager.group.getObjectByName('scope-lens').material.color.getHex(),0x688875);assert.ok(manager.group.getObjectByName('scope-front').geometry.parameters.radiusTop>=.14);assert.ok(manager.group.getObjectByName('muzzle').position.z<-2.3);assert.ok(manager.group.scale.x>.75);
+  assert.equal(manager.group.getObjectByName('scope-lens').material.color.getHex(),0x688875);assert.ok(manager.group.getObjectByName('scope-front').geometry.parameters.radiusTop>=.14);assert.ok(manager.group.getObjectByName('muzzle').position.z<-2.3);assert.ok(manager.group.scale.x>=.6&&manager.group.scale.x<=.66);assert.ok(manager.group.position.z<=-.8);
 });
 
 test('все винтовки имеют сглаженные корпуса и свои узнаваемые детали',()=>{

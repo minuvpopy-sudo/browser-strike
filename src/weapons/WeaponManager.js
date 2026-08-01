@@ -83,9 +83,10 @@ export class WeaponManager extends EventTarget {
     this.sway += dt * (5 + moving);
     const holdingBomb = active?.definition?.id === 'bomb';
     const holdingGrenade = active?.definition?.category === 'grenades';
-    const baseX = active instanceof Knife ? 0.43 : holdingBomb ? .38 : holdingGrenade ? .4 : 0.34;
-    const baseY = active instanceof Knife ? -0.4 : holdingBomb ? -.42 : holdingGrenade ? -.43 : -0.31;
-    const baseZ = active instanceof Knife ? -1.0 : holdingBomb ? -1.08 : holdingGrenade ? -.95 : -0.62;
+    const holdingAwp=active?.definition?.id==='awp';
+    const baseX = active instanceof Knife ? 0.43 : holdingBomb ? .38 : holdingGrenade ? .4 : holdingAwp ? .3 : 0.34;
+    const baseY = active instanceof Knife ? -0.4 : holdingBomb ? -.42 : holdingGrenade ? -.43 : holdingAwp ? -.36 : -0.31;
+    const baseZ = active instanceof Knife ? -1.0 : holdingBomb ? -1.08 : holdingGrenade ? -.95 : holdingAwp ? -.82 : -0.62;
     this.group.position.x = baseX + Math.sin(this.sway) * Math.min(0.014, moving * 0.0022);
     this.group.position.y = baseY + Math.abs(Math.cos(this.sway)) * Math.min(0.012, moving * 0.002);
     this.group.position.z = THREE.MathUtils.lerp(this.group.position.z, baseZ, Math.min(1, dt * 16));
@@ -563,8 +564,8 @@ export class WeaponManager extends EventTarget {
     const baseRotation = new THREE.Euler(referenceAwp?-.065:-.09, referenceAwp?.055:.04, referenceAwp?.035:.025, 'YXZ');
     this.group.userData.baseRotation = baseRotation;
     this.group.rotation.copy(baseRotation);
-    this.group.position.set(referenceAwp?.38:.36, referenceAwp?-.3:-.32, referenceAwp?-.58:-.68);
-    this.group.scale.setScalar(referenceAwp?.79:long ? .72 : pistol ? .86 : .78);
+    this.group.position.set(referenceAwp?.3:.36, referenceAwp?-.36:-.32, referenceAwp?-.82:-.68);
+    this.group.scale.setScalar(referenceAwp?.63:long ? .72 : pistol ? .86 : .78);
   }
 
   buildKnife(knife) {
