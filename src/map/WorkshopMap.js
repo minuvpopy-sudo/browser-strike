@@ -1,5 +1,5 @@
 export const WORKSHOP_MAP_FORMAT = 'browser-strike-map';
-export const WORKSHOP_MAP_VERSION = 2;
+export const WORKSHOP_MAP_VERSION = 3;
 export const WORKSHOP_MAP_MAX_SIZE = 480;
 export const WORKSHOP_IMPORT_MAX_BYTES = 20 * 1024 * 1024;
 export const MAP_MATERIALS = Object.freeze({
@@ -23,13 +23,13 @@ function sanitizePoint(point, size, fallback) {
 }
 
 function sanitizeObject(object, index, size) {
-  const type = ['wall', 'crate', 'ramp'].includes(object?.type) ? object.type : 'wall';
+  const type = ['wall', 'crate', 'ramp', 'platform'].includes(object?.type) ? object.type : 'wall';
   const requestedMaterial=object?.material||object?.texture||object?.textureId;
-  const material = MAP_MATERIALS[requestedMaterial] ? requestedMaterial : type === 'crate' ? 'wood' : type === 'ramp' ? 'concrete' : 'sandstone';
+  const material = MAP_MATERIALS[requestedMaterial] ? requestedMaterial : type === 'crate' ? 'wood' : ['ramp', 'platform'].includes(type) ? 'concrete' : 'sandstone';
   const maxWidth = Math.max(2, size.width - 4), maxDepth = Math.max(2, size.depth - 4);
-  const w = clamp(object?.w, .8, Math.min(120, maxWidth), type === 'crate' ? 3 : type === 'ramp' ? 7 : 8);
-  const d = clamp(object?.d, .8, Math.min(120, maxDepth), type === 'crate' ? 3 : type === 'ramp' ? 14 : 2);
-  const h = clamp(object?.h, .5, 40, type === 'crate' ? 3 : type === 'ramp' ? 6 : 5);
+  const w = clamp(object?.w, .8, Math.min(120, maxWidth), type === 'crate' ? 3 : type === 'ramp' ? 7 : type === 'platform' ? 16 : 8);
+  const d = clamp(object?.d, .8, Math.min(120, maxDepth), type === 'crate' ? 3 : type === 'ramp' ? 14 : type === 'platform' ? 12 : 2);
+  const h = clamp(object?.h, .5, 40, type === 'crate' ? 3 : type === 'ramp' ? 6 : type === 'platform' ? 2.2 : 5);
   const direction = ['north', 'south', 'east', 'west'].includes(object?.direction) ? object.direction : 'north';
   return {
     id: cleanId(object?.id) || `object-${index + 1}`,
@@ -121,10 +121,11 @@ export function workshopMapToConfig(input) {
   const walls = map.objects.filter((object) => object.type === 'wall').map((object) => ({ ...object, y: object.h / 2 }));
   const crates = map.objects.filter((object) => object.type === 'crate').map((object) => ({ ...object, y: object.h / 2 }));
   const ramps = map.objects.filter((object) => object.type === 'ramp').map((object) => ({ ...object, y: object.h / 2 }));
-  const { nodes, links } = navigationFor(map, [...walls, ...crates]);
+  const platforms = map.objects.filter((object) => object.type === 'platform').map((object) => ({ ...object, y: object.h / 2, standable: true }));
+  const { nodes, links } = navigationFor(map, [...walls, ...crates, ...platforms]);
   return {
     custom: true, sourceMapId: map.id, name: map.name, author: map.author, scale: 1, floorY: 0,
-    floorMaterial: map.floorMaterial, size: { ...map.size }, walls, crates, ramps,
+    floorMaterial: map.floorMaterial, size: { ...map.size }, walls, crates, ramps, platforms,
     attackerSpawns: spawnCluster(map.attackerSpawn, map.size), defenderSpawns: spawnCluster(map.defenderSpawn, map.size),
     buyZones: [{ team: 'attackers', ...map.attackerSpawn, radius: 12 }, { team: 'defenders', ...map.defenderSpawn, radius: 12 }],
     bombSites: map.bombSites.map((site) => ({ ...site })), nodes, links

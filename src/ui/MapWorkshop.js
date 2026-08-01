@@ -106,7 +106,8 @@ export class MapWorkshop extends EventTarget {
   selectTool(tool) {
     this.tool = tool;document.querySelectorAll('[data-builder-tool]').forEach((button) => button.classList.toggle('selected', button.dataset.builderTool === tool));
     if(tool==='ramp'&&!this.selectedId){this.elements.objectWidth.value=7;this.elements.objectDepth.value=14;this.elements.objectHeight.value=6;this.elements.material.value='concrete';}
-    this.setStatus({ select: 'Выберите объект на карте', wall: 'Кликните по сетке, чтобы поставить стену', crate: 'Кликните по сетке, чтобы поставить ящик', ramp: 'Кликните по сетке, чтобы поставить проходимую рампу', attacker: 'Укажите появление террористов', defender: 'Укажите появление спецназа', siteA: 'Укажите центр точки A', siteB: 'Укажите центр точки B', erase: 'Кликните по объекту для удаления' }[tool] || 'Инструмент выбран');
+    if(tool==='platform'&&!this.selectedId){this.elements.objectWidth.value=16;this.elements.objectDepth.value=12;this.elements.objectHeight.value=2.2;this.elements.material.value='concrete';}
+    this.setStatus({ select: 'Выберите объект на карте', wall: 'Кликните по сетке, чтобы поставить стену', crate: 'Кликните по сетке, чтобы поставить ящик', platform: 'Кликните по сетке, чтобы поставить плоскую платформу', ramp: 'Кликните по сетке, чтобы поставить проходимую рампу', attacker: 'Укажите появление террористов', defender: 'Укажите появление спецназа', siteA: 'Укажите центр точки A', siteB: 'Укажите центр точки B', erase: 'Кликните по объекту для удаления' }[tool] || 'Инструмент выбран');
   }
 
   onPointerDown(event) {
@@ -116,7 +117,7 @@ export class MapWorkshop extends EventTarget {
     if (this.tool === 'erase') { if (hitObject) { this.map.objects = this.map.objects.filter((object) => object.id !== hitObject.userData.mapObjectId);this.selectedId = null;this.rebuildScene(); }return; }
     if (this.tool === 'select') { this.selectObject(hitObject?.userData?.mapObjectId || null);return; }
     const point = this.groundPoint(event);if (!point) return;const x = Math.round(point.x), z = Math.round(point.z);
-    if (['wall','crate','ramp'].includes(this.tool)) {
+    if (['wall','crate','ramp','platform'].includes(this.tool)) {
       const object = { id: `object-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`, type: this.tool, x, z, w: Number(this.elements.objectWidth.value), d: Number(this.elements.objectDepth.value), h: Number(this.elements.objectHeight.value), material: this.elements.material.value, ...(this.tool==='ramp'?{direction:this.elements.rampDirection.value}:{}) };
       this.map = sanitizeWorkshopMap({ ...this.map, objects: [...this.map.objects, object] });this.selectedId = object.id;
     } else if (this.tool === 'attacker') this.map.attackerSpawn = { x, z };
@@ -133,7 +134,7 @@ export class MapWorkshop extends EventTarget {
 
   selectObject(id) {
     this.selectedId = id;const object = this.map.objects.find((item) => item.id === id);
-    if (object) { this.elements.objectWidth.value = object.w;this.elements.objectDepth.value = object.d;this.elements.objectHeight.value = object.h;this.elements.material.value = object.material;if(object.type==='ramp')this.elements.rampDirection.value=object.direction;this.setStatus(`Выбран объект ${{wall:'«стена»',crate:'«ящик»',ramp:'«рампа»'}[object.type]}`); }
+    if (object) { this.elements.objectWidth.value = object.w;this.elements.objectDepth.value = object.d;this.elements.objectHeight.value = object.h;this.elements.material.value = object.material;if(object.type==='ramp')this.elements.rampDirection.value=object.direction;this.setStatus(`Выбран объект ${{wall:'«стена»',crate:'«ящик»',platform:'«платформа»',ramp:'«рампа»'}[object.type]}`); }
     this.syncTextureSelection();
     this.rebuildScene();
   }
@@ -146,7 +147,7 @@ export class MapWorkshop extends EventTarget {
 
   deleteSelected() { if (!this.selectedId) return this.setStatus('Сначала выберите объект', 'error');this.map.objects = this.map.objects.filter((object) => object.id !== this.selectedId);this.selectedId = null;this.rebuildScene(); }
 
-  clearAll() { if (!this.map?.objects.length) return this.setStatus('Карта уже пустая');if (!globalThis.confirm?.('Удалить со сцены все стены, ящики и рампы?')) return;this.map = sanitizeWorkshopMap({ ...this.map, objects: [] });this.selectedId = null;this.rebuildScene();this.setStatus('Все объекты карты удалены', 'success'); }
+  clearAll() { if (!this.map?.objects.length) return this.setStatus('Карта уже пустая');if (!globalThis.confirm?.('Удалить со сцены все стены, ящики, платформы и рампы?')) return;this.map = sanitizeWorkshopMap({ ...this.map, objects: [] });this.selectedId = null;this.rebuildScene();this.setStatus('Все объекты карты удалены', 'success'); }
 
   rebuildScene() {
     if (!this.scene || !this.map || !this.editorMaterials) return;

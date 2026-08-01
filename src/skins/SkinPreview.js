@@ -127,6 +127,16 @@ export class SkinPreview {
       guard.position.set(-.02, .17, .03);
       guard.rotation.z = -.12;
       this.group.add(guard);
+    } else if (this.type === 'm9') {
+      const bladeShape=new THREE.Shape();bladeShape.moveTo(-.1,-.3);bladeShape.lineTo(1.55,-.28);bladeShape.lineTo(2.38,.03);bladeShape.lineTo(1.66,.42);bladeShape.lineTo(-.08,.42);bladeShape.closePath();
+      const bladeHole=new THREE.Path();bladeHole.absellipse(1.55,.08,.12,.085,0,Math.PI*2,false,0);bladeShape.holes.push(bladeHole);
+      const blade=new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape,{depth:.12,curveSegments:8,bevelEnabled:true,bevelThickness:.026,bevelSize:.02,bevelSegments:2}),bladeMaterial);blade.name='m9-preview-blade';this.group.add(blade);
+      for(let index=0;index<7;index++){const serration=new THREE.Mesh(new THREE.BoxGeometry(.13,.11,.16),detailMaterial);serration.name='m9-preview-serration';serration.position.set(.18+index*.19,.45,.055);serration.rotation.z=.6;this.group.add(serration);}
+      const guard=new THREE.Mesh(new THREE.BoxGeometry(.18,1.02,.22),bladeMaterial);guard.position.set(-.17,.05,.02);this.group.add(guard);
+      const guardRing=new THREE.Mesh(new THREE.TorusGeometry(.22,.065,10,26),bladeMaterial);guardRing.position.set(-.19,-.51,.02);this.group.add(guardRing);
+      const handle=new THREE.Mesh(new THREE.BoxGeometry(1.48,.48,.3),gripMaterial);handle.position.set(-.98,.05,.01);this.group.add(handle);
+      const ribMaterial=new THREE.MeshStandardMaterial({color:new THREE.Color(style.handle).multiplyScalar(.6),metalness:.12,roughness:.86});for(let index=0;index<7;index++){const rib=new THREE.Mesh(new THREE.BoxGeometry(.08,.56,.34),ribMaterial);rib.position.set(-.36-index*.19,.05,.01);this.group.add(rib);}
+      const pommel=new THREE.Mesh(new THREE.BoxGeometry(.18,.58,.34),detailMaterial);pommel.position.set(-1.78,.05,.01);this.group.add(pommel);
     } else {
       const bladeShape = new THREE.Shape();
       bladeShape.moveTo(-.18, -.15);
@@ -154,11 +164,11 @@ export class SkinPreview {
         this.group.add(handle);
       }
     }
-    this.group.rotation.set(this.type === 'karambit' ? .18 : .25, this.type === 'karambit' ? -.34 : -.45, this.type === 'karambit' ? -.06 : -.12);
+    this.group.rotation.set(this.type === 'karambit' ? .18 : this.type === 'm9' ? .12 : .25, this.type === 'karambit' ? -.34 : this.type === 'm9' ? -.28 : -.45, this.type === 'karambit' ? -.06 : this.type === 'm9' ? -.04 : -.12);
     this.waveMaterials = collectKnifeWaveMaterials(this.group);
   }
 
-  inspect() { this.inspectLeft = this.type === 'karambit' ? 2.2 : 1.5; }
+  inspect() { this.inspectLeft = this.type === 'karambit' ? 2.6 : this.type === 'm9' ? 2.1 : 1.7; }
 
   animate(now) {
     if (!this.running) return;
@@ -169,21 +179,23 @@ export class SkinPreview {
     if (this.waveMaterials?.length) animateKnifeWaves(this.waveMaterials, now / 1000);
 
     if (this.inspectLeft > 0) {
-      const duration = this.type === 'karambit' ? 2.2 : 1.5;
+      const duration = this.type === 'karambit' ? 2.6 : this.type === 'm9' ? 2.1 : 1.7;
       const progress = 1 - this.inspectLeft / duration;
       if (this.type === 'karambit') {
         const flourish = Math.sin(progress * Math.PI);
         this.group.rotation.x = .18 + Math.sin(progress * Math.PI * 4) * .42 * flourish;
         this.group.rotation.y = -.34 + progress * Math.PI * 4;
         this.group.rotation.z = -.06 + Math.sin(progress * Math.PI * 2) * 1.15 * flourish;
+      } else if (this.type === 'm9') {
+        const flourish=Math.sin(progress*Math.PI);this.group.rotation.x=.12+Math.sin(progress*Math.PI*2)*.28*flourish;this.group.rotation.y=-.28+progress*Math.PI*2+flourish*.45;this.group.rotation.z=-.04+Math.sin(progress*Math.PI*4)*.2*flourish;
       } else {
         this.group.rotation.y = -.45 + progress * Math.PI * 2;
         this.group.rotation.z = -.12 + Math.sin(progress * Math.PI) * .35;
       }
       this.inspectLeft = Math.max(0, this.inspectLeft - dt);
     } else {
-      const idleX = this.type === 'karambit' ? .18 : .25;
-      const idleZ = this.type === 'karambit' ? -.06 : -.12;
+      const idleX = this.type === 'karambit' ? .18 : this.type === 'm9' ? .12 : .25;
+      const idleZ = this.type === 'karambit' ? -.06 : this.type === 'm9' ? -.04 : -.12;
       this.group.rotation.x = THREE.MathUtils.lerp(this.group.rotation.x, idleX, Math.min(1, dt * 5));
       this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, idleZ, Math.min(1, dt * 5));
       this.group.rotation.y += dt * .38;

@@ -84,9 +84,9 @@ export class WeaponManager extends EventTarget {
     const holdingBomb = active?.definition?.id === 'bomb';
     const holdingGrenade = active?.definition?.category === 'grenades';
     const holdingAwp=active?.definition?.id==='awp';
-    const baseX = active instanceof Knife ? 0.43 : holdingBomb ? .38 : holdingGrenade ? .4 : holdingAwp ? .3 : 0.34;
-    const baseY = active instanceof Knife ? -0.4 : holdingBomb ? -.42 : holdingGrenade ? -.43 : holdingAwp ? -.36 : -0.31;
-    const baseZ = active instanceof Knife ? -1.0 : holdingBomb ? -1.08 : holdingGrenade ? -.95 : holdingAwp ? -.82 : -0.62;
+    const baseX = active instanceof Knife ? (active.variant === 'm9' ? .39 : .43) : holdingBomb ? .38 : holdingGrenade ? .4 : holdingAwp ? .3 : 0.34;
+    const baseY = active instanceof Knife ? (active.variant === 'm9' ? -.43 : -.4) : holdingBomb ? -.42 : holdingGrenade ? -.43 : holdingAwp ? -.36 : -0.31;
+    const baseZ = active instanceof Knife ? (active.variant === 'karambit' ? -1.18 : active.variant === 'm9' ? -1.08 : -1) : holdingBomb ? -1.08 : holdingGrenade ? -.95 : holdingAwp ? -.82 : -0.62;
     this.group.position.x = baseX + Math.sin(this.sway) * Math.min(0.014, moving * 0.0022);
     this.group.position.y = baseY + Math.abs(Math.cos(this.sway)) * Math.min(0.012, moving * 0.002);
     this.group.position.z = THREE.MathUtils.lerp(this.group.position.z, baseZ, Math.min(1, dt * 16));
@@ -127,6 +127,7 @@ export class WeaponManager extends EventTarget {
     const left = this.group.getObjectByName('butterfly-handle-left');
     const right = this.group.getObjectByName('butterfly-handle-right');
     const karambitPivot = this.group.getObjectByName('karambit-pivot');
+    const m9Pivot = this.group.getObjectByName('m9-pivot');
     let handleLeft = 0;
     let handleRight = 0;
     let rotX = base.x;
@@ -136,17 +137,28 @@ export class WeaponManager extends EventTarget {
     let pivotX = 0;
     let pivotY = 0;
     let pivotZ = 0;
+    let m9PivotX = 0;
+    let m9PivotY = 0;
+    let m9PivotZ = 0;
 
     if (this.drawTime > 0) {
       this.drawTime = Math.max(0, this.drawTime - dt);
-      const duration = knife.variant === 'karambit' ? 1.02 : .88;
+      const duration = knife.variant === 'karambit' ? 1.18 : knife.variant === 'm9' ? 1.04 : .94;
       const progress = 1 - this.drawTime / duration;
       const eased = easeOutBack(Math.min(1, progress));
       if (knife.variant === 'karambit') {
-        pivotY = (1 - eased) * -Math.PI * 1.8;
-        pivotZ = (1 - eased) * Math.PI * 1.25;
-        rotX += (1 - eased) * .38;
-        thrust = (1 - eased) * .24;
+        pivotY = (1 - eased) * -Math.PI * 2.35;
+        pivotZ = (1 - eased) * Math.PI * 1.45;
+        rotX += (1 - eased) * .5;
+        rotY -= Math.sin(progress * Math.PI) * .18;
+        thrust = (1 - eased) * .3;
+      } else if (knife.variant === 'm9') {
+        m9PivotX = (1 - eased) * -1.3;
+        m9PivotY = (1 - eased) * Math.PI * 1.5;
+        m9PivotZ = (1 - eased) * -.72;
+        rotX += (1 - eased) * .62;
+        rotZ -= Math.sin(progress * Math.PI) * .3;
+        thrust = (1 - eased) * .28;
       } else {
         handleLeft = Math.PI * (1 - eased);
         handleRight = -Math.PI * (1 - eased);
@@ -162,15 +174,24 @@ export class WeaponManager extends EventTarget {
       rotZ += Math.sin(progress * Math.PI * 2) * 0.48 * flourish;
       rotX += Math.sin(progress * Math.PI * 4) * 0.18;
     } else if (knife.inspecting > 0 && knife.variant === 'karambit') {
-      const progress = 1 - knife.inspecting / 2.2;
+      const progress = 1 - knife.inspecting / 2.6;
       const flourish = Math.sin(progress * Math.PI);
-      pivotX = Math.sin(progress * Math.PI * 4) * .52 * flourish;
-      pivotY = progress * Math.PI * 4;
-      pivotZ = Math.sin(progress * Math.PI * 2) * 1.05 * flourish;
-      rotX += Math.sin(progress * Math.PI * 2) * .22;
-      rotY -= Math.sin(progress * Math.PI) * .45;
-      rotZ += progress * Math.PI * 2;
-      thrust = -flourish * .18;
+      const catchPause = Math.sin(Math.min(1, progress * 1.45) * Math.PI);
+      pivotX = Math.sin(progress * Math.PI * 4) * .58 * flourish;
+      pivotY = progress * Math.PI * 5;
+      pivotZ = Math.sin(progress * Math.PI * 2) * 1.18 * flourish;
+      rotX += Math.sin(progress * Math.PI * 2) * .27;
+      rotY -= flourish * .52;
+      rotZ += progress * Math.PI * 2 + catchPause * .18;
+      thrust = -flourish * .22;
+    } else if (knife.inspecting > 0 && knife.variant === 'm9') {
+      const progress = 1 - knife.inspecting / 2.1;
+      const flourish = Math.sin(progress * Math.PI);
+      const showSide = Math.sin(progress * Math.PI * 2);
+      m9PivotX = showSide * .45 * flourish;
+      m9PivotY = progress * Math.PI * 2 + flourish * .55;
+      m9PivotZ = -Math.sin(progress * Math.PI * 4) * .28 * flourish;
+      rotX -= flourish * .3;rotY += showSide * .24;rotZ += flourish * .42;thrust = -flourish * .2;
     }
 
     if (this.knifeAction) {
@@ -190,6 +211,9 @@ export class WeaponManager extends EventTarget {
           pivotZ += arc * .45;
           thrust = arc * -.24;
         }
+      } else if (knife.variant === 'm9') {
+        if (this.knifeAction.heavy) { rotX -= arc * .72;rotY -= arc * .62;rotZ += arc * .24;m9PivotX += arc * .35;thrust = arc * -.46; }
+        else { rotZ -= arc * 1.18;rotY += arc * .42;m9PivotY -= arc * .25;thrust = arc * -.2; }
       } else if (this.knifeAction.heavy) {
         rotX -= arc * .62;
         rotY -= arc * .5;
@@ -206,11 +230,16 @@ export class WeaponManager extends EventTarget {
       if (progress >= 1) this.knifeAction = null;
     }
 
+    if (this.drawTime <= 0 && knife.inspecting <= 0 && !this.knifeAction) {
+      rotX += Math.sin(this.skinTime * 1.35) * .012;rotY += Math.sin(this.skinTime * .72) * .008;rotZ += Math.cos(this.skinTime * 1.05) * .009;
+    }
+
     if (left && right) {
       left.rotation.y = handleLeft;
       right.rotation.y = handleRight;
     }
     if (karambitPivot) karambitPivot.rotation.set(pivotX, pivotY, pivotZ, 'YXZ');
+    if (m9Pivot) m9Pivot.rotation.set(m9PivotX, m9PivotY, m9PivotZ, 'YXZ');
     this.group.rotation.set(rotX, rotY, rotZ, 'YXZ');
     this.group.position.z += thrust;
   }
@@ -304,7 +333,7 @@ export class WeaponManager extends EventTarget {
     else if (active.definition?.category === 'grenades') this.buildGrenade(active.definition);
     else this.buildGun(active.definition);
     this.waveMaterials = collectKnifeWaveMaterials(this.group);
-    this.drawTime = active instanceof Knife ? (active.variant === 'karambit' ? 1.02 : .88) : .35;
+    this.drawTime = active instanceof Knife ? (active.variant === 'karambit' ? 1.18 : active.variant === 'm9' ? 1.04 : .94) : .35;
     this.lastActive = active;
   }
 
@@ -609,11 +638,11 @@ export class WeaponManager extends EventTarget {
       pivot.add(model);
 
       const bladeShape = new THREE.Shape();
-      bladeShape.moveTo(-.2, .04);
-      bladeShape.bezierCurveTo(-.7, -.25, -.9, -.92, -.56, -1.36);
-      bladeShape.bezierCurveTo(-.36, -1.64, .07, -1.8, .55, -1.7);
-      bladeShape.bezierCurveTo(.43, -1.53, .22, -1.28, -.08, -1.03);
-      bladeShape.bezierCurveTo(.24, -.77, .31, -.42, .18, -.14);
+      bladeShape.moveTo(-.22, .04);
+      bladeShape.bezierCurveTo(-.62, -.24, -.82, -.86, -.52, -1.42);
+      bladeShape.bezierCurveTo(-.43, -1.6, -.31, -1.75, -.2, -1.86);
+      bladeShape.bezierCurveTo(-.04, -1.51, .24, -1.21, .51, -1.08);
+      bladeShape.bezierCurveTo(.31, -.77, .25, -.34, .18, -.12);
       bladeShape.lineTo(.14, .04);
       bladeShape.closePath();
       const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .07, curveSegments: 10, bevelEnabled: true, bevelThickness: .018, bevelSize: .014, bevelSegments: 2 }), bladeMaterial);
@@ -632,6 +661,10 @@ export class WeaponManager extends EventTarget {
       const edge = new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 28, .016, 5, false), edgeMaterial);
       edge.name = 'karambit-edge';
       model.add(edge);
+      const toothMaterial = new THREE.MeshStandardMaterial({ color: 0x596064, metalness: .88, roughness: .2 });
+      for (let index = 0; index < 6; index += 1) {
+        const tooth = new THREE.Mesh(new THREE.ConeGeometry(.042, .13, 3), toothMaterial);tooth.name='karambit-spine-tooth';tooth.position.set(-.25-index*.052,.082,-.24-index*.18);tooth.rotation.set(Math.PI/2,0,-.35);model.add(tooth);
+      }
 
       const handleShape = new THREE.Shape();
       handleShape.moveTo(-.17, -.02);
@@ -655,6 +688,9 @@ export class WeaponManager extends EventTarget {
         inlay.rotation.x = -.04;
         model.add(inlay);
       }
+      for (let index = 0; index < 4; index += 1) {
+        const ridge = new THREE.Mesh(new THREE.TorusGeometry(.16,.025,6,14,Math.PI),inlayMaterial);ridge.name='karambit-finger-groove';ridge.rotation.set(Math.PI/2,0,Math.PI);ridge.position.set(0,.105,.22+index*.19);ridge.scale.x=1.18;model.add(ridge);
+      }
 
       for (const z of [.2, .5, .75]) {
         const pin = new THREE.Mesh(new THREE.CylinderGeometry(.031, .031, .205, 10), pinMaterial);
@@ -663,12 +699,12 @@ export class WeaponManager extends EventTarget {
         model.add(pin);
       }
 
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(.205, .052, 9, 26), gripMaterial);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(.23, .058, 10, 30), gripMaterial);
       ring.name = 'karambit-ring';
       ring.rotation.x = Math.PI / 2;
       pivot.add(ring);
 
-      const ringLiner = new THREE.Mesh(new THREE.TorusGeometry(.145, .018, 6, 24), pinMaterial);
+      const ringLiner = new THREE.Mesh(new THREE.TorusGeometry(.158, .018, 7, 28), pinMaterial);
       ringLiner.name = 'karambit-ring-liner';
       ringLiner.rotation.x = Math.PI / 2;
       pivot.add(ringLiner);
@@ -677,6 +713,18 @@ export class WeaponManager extends EventTarget {
       guard.name = 'karambit-guard';
       guard.position.z = .04;
       model.add(guard);
+    } else if (knife.variant === 'm9') {
+      const pivot=new THREE.Group();pivot.name='m9-pivot';pivot.position.z=.92;this.group.add(pivot);const model=new THREE.Group();model.position.z=-.92;pivot.add(model);
+      const bladeShape=new THREE.Shape();bladeShape.moveTo(-.18,.02);bladeShape.lineTo(-.19,-.62);bladeShape.lineTo(-.13,-1.18);bladeShape.lineTo(-.02,-1.55);bladeShape.lineTo(.1,-1.42);bladeShape.lineTo(.21,-1.08);bladeShape.lineTo(.18,.02);bladeShape.closePath();
+      const bladeHole=new THREE.Path();bladeHole.absellipse(-.015,-1.08,.062,.105,0,Math.PI*2,false,0);bladeShape.holes.push(bladeHole);
+      const blade=new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape,{depth:.082,curveSegments:8,bevelEnabled:true,bevelThickness:.018,bevelSize:.014,bevelSegments:2}),bladeMaterial);blade.name='m9-blade';blade.rotation.x=Math.PI/2;blade.position.y=.04;model.add(blade);
+      const edgeMaterial=new THREE.MeshStandardMaterial({color:0xe2e7e5,metalness:.96,roughness:.1});const edge=new THREE.Mesh(new THREE.BoxGeometry(.025,.018,1.22),edgeMaterial);edge.name='m9-edge';edge.position.set(.19,.09,-.58);edge.rotation.z=-.025;model.add(edge);
+      for(let index=0;index<7;index++){const serration=new THREE.Mesh(new THREE.BoxGeometry(.08,.1,.07),pinMaterial);serration.name='m9-serration';serration.position.set(-.2,.075,-.23-index*.11);serration.rotation.y=.45;model.add(serration);}
+      const guard=new THREE.Mesh(roundedBoxGeometry([.62,.14,.15],.045),bladeMaterial);guard.name='m9-guard';model.add(guard);
+      const guardRing=new THREE.Mesh(new THREE.TorusGeometry(.15,.045,9,24),bladeMaterial);guardRing.name='m9-guard-ring';guardRing.rotation.x=Math.PI/2;guardRing.position.x=-.31;model.add(guardRing);
+      const handle=new THREE.Mesh(roundedBoxGeometry([.3,.2,.9],.055),gripMaterial);handle.name='m9-handle';handle.rotation.x=Math.PI/2;handle.position.set(0,.02,.47);model.add(handle);
+      const ribMaterial=new THREE.MeshStandardMaterial({color:new THREE.Color(style.handle).multiplyScalar(.63),metalness:.18,roughness:.82});for(let index=0;index<7;index++){const rib=new THREE.Mesh(new THREE.BoxGeometry(.34,.23,.055),ribMaterial);rib.name='m9-grip-rib';rib.position.set(0,.02,.15+index*.105);model.add(rib);}
+      const pommel=new THREE.Mesh(roundedBoxGeometry([.36,.23,.14],.045),pinMaterial);pommel.name='m9-pommel';pommel.rotation.x=Math.PI/2;pommel.position.set(0,.02,.94);model.add(pommel);
     } else {
       const bladeShape = new THREE.Shape();
       bladeShape.moveTo(-.1, 0);
@@ -715,7 +763,7 @@ export class WeaponManager extends EventTarget {
       };
       makeHandle('butterfly-handle-left', -0.09);
       makeHandle('butterfly-handle-right', 0.09);
-    } else if (knife.variant !== 'karambit') {
+    } else if (!['karambit','m9'].includes(knife.variant)) {
       const guard = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.1, 0.12), pinMaterial);
       this.group.add(guard);
       const handle = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.18, 0.82), gripMaterial);
@@ -725,11 +773,11 @@ export class WeaponManager extends EventTarget {
 
     const baseRotation = knife.variant === 'karambit'
       ? new THREE.Euler(.9, .2, -.12, 'YXZ')
-      : new THREE.Euler(1.02, .2, -.1, 'YXZ');
+      : knife.variant === 'm9' ? new THREE.Euler(.96,.17,-.08,'YXZ') : new THREE.Euler(1.02, .2, -.1, 'YXZ');
     this.group.userData.baseRotation = baseRotation;
     this.group.rotation.copy(baseRotation);
-    this.group.position.set(.4, knife.variant === 'karambit' ? -.39 : -.4, knife.variant === 'karambit' ? -1.28 : -1);
-    this.group.scale.setScalar(knife.variant === 'karambit' ? .56 : .68);
+    this.group.position.set(knife.variant==='m9'?.38:.4, knife.variant === 'm9' ? -.43 : knife.variant === 'karambit' ? -.39 : -.4, knife.variant === 'karambit' ? -1.22 : knife.variant === 'm9' ? -1.08 : -1);
+    this.group.scale.setScalar(knife.variant === 'karambit' ? .58 : knife.variant === 'm9' ? .64 : .68);
   }
 
   dispatch(type) {

@@ -14,6 +14,7 @@ import { OnlineSession } from './network/OnlineSession.js';
 import { MapWorkshop } from './ui/MapWorkshop.js';
 import { MAP_CONFIG } from './map/MapConfig.js';
 import { workshopMapToConfig } from './map/WorkshopMap.js';
+import { PromoAdminMenu } from './ui/PromoAdminMenu.js';
 
 const settings=new SettingsManager();
 const save=new SaveManager();
@@ -45,7 +46,9 @@ document.querySelectorAll('.mode-choice').forEach(button=>button.addEventListene
 document.querySelector(`.mode-choice[data-mode="${mode}"]`)?.click();
 
 const game=new Game({settings,save,audio,skinManager,mainMenu,teamMenu});
-const start=async(quick=false)=>{audio.unlock();const team=quick?(Math.random()<.5?'attackers':'defenders'):teamMenu.resolved();await game.start({team,mode:quick?'bomb':mode,mapConfig:selectedMap});};
+const promoAdminMenu=new PromoAdminMenu({save,game,audio});
+game.pauseMenu.addEventListener('admin',()=>{game.returnToPause=true;game.mainMenu.open('promo-menu');promoAdminMenu.openTab('admin');});
+const start=async(quick=false)=>{audio.unlock();game.adminState={god:false,ammo:false,freeze:false};promoAdminMenu.resetSession();const team=quick?(Math.random()<.5?'attackers':'defenders'):teamMenu.resolved();await game.start({team,mode:quick?'bomb':mode,mapConfig:selectedMap});};
 mainMenu.addEventListener('newgame',()=>start(false));
 mainMenu.addEventListener('quickmatch',()=>start(true));
 onlineSession.addEventListener('ready',async(event)=>{
@@ -58,4 +61,4 @@ mainMenu.addEventListener('open',event=>{mapWorkshop.onScreen(event.detail);if(e
 settingsMenu.addEventListener('saved',()=>audio.click());
 
 const autoUpdater=new AutoUpdater({version:__BUILD_VERSION__,canReload:()=>!game.active}).start();
-window.browserStrike={game,settings,onlineSession,mapWorkshop,autoUpdater,version:__BUILD_VERSION__};
+window.browserStrike={game,settings,onlineSession,mapWorkshop,promoAdminMenu,autoUpdater,version:__BUILD_VERSION__};

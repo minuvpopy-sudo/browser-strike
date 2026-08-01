@@ -1,5 +1,6 @@
 const wall = (x, z, w, d, h = 6, material = 'sandstone', y = h / 2) => ({ x, y, z, w, h, d, material });
 const crate = (x, z, size = 3, y = size / 2) => ({ x, y, z, w: size, h: size, d: size });
+const platform = (x, z, w, d, h = 2.2, material = 'concrete', y = h / 2) => ({ x, y, z, w, h, d, material, standable: true });
 export const MAP_SCALE = 1.18;
 
 const RAW_MAP_CONFIG = {
@@ -29,7 +30,8 @@ const RAW_MAP_CONFIG = {
     crate(-31,42,4),crate(-27,42,4),crate(36,38,4),crate(41,38,4),crate(40,31,3),crate(-42,-37,4),crate(-37,-37,4),crate(-38,-29,3),
     crate(-10,-9,3),crate(11,8,3),crate(27,-13,4),crate(51,14,3),crate(-45,8,4),crate(-17,44,3),crate(30,45,3),crate(-8,-44,4)
   ],
-  ramps: [{x:16,z:28,w:9,d:12,rotation:-.18},{x:-30,z:-18,w:10,d:8,rotation:.16}],
+  platforms: [platform(12,42,13,9,2.2,'concrete')],
+  ramps: [{x:16,z:28,w:9,d:12,rotation:-.18},{x:-30,z:-18,w:10,d:8,rotation:.16},{x:12,z:34,w:10,d:7,h:2.2,direction:'south',material:'concrete'}],
   nodes: [
     {id:'tSpawn',x:-43,z:43},{id:'tSplit',x:-28,z:31},{id:'longDoors',x:-47,z:12},{id:'longPit',x:-50,z:-15},{id:'longA',x:-17,z:-27},{id:'aRamp',x:10,z:-20},{id:'siteA',x:38,z:34},
     {id:'midTop',x:-13,z:20},{id:'midDoors',x:0,z:1},{id:'midBottom',x:13,z:-12},{id:'short',x:17,z:18},{id:'shortA',x:28,z:28},
@@ -56,6 +58,7 @@ export const MAP_CONFIG = Object.freeze({
   bombSites: RAW_MAP_CONFIG.bombSites.map(scaleZone),
   walls: RAW_MAP_CONFIG.walls.map(scaleStructure),
   crates: RAW_MAP_CONFIG.crates.map(scaleStructure),
+  platforms: RAW_MAP_CONFIG.platforms.map(scaleStructure),
   ramps: RAW_MAP_CONFIG.ramps.map(scaleStructure),
   nodes: RAW_MAP_CONFIG.nodes.map(scalePoint)
 });

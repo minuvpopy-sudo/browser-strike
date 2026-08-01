@@ -1,0 +1,1179 @@
+{
+  "format": "browser-strike-map",
+  "version": 3,
+  "id": "dust-colosseum-xl-v3",
+  "name": "Dust Colosseum XL",
+  "author": "Browser Strike Workshop",
+  "size": {
+    "width": 280,
+    "depth": 260
+  },
+  "floorMaterial": "dust",
+  "attackerSpawn": {
+    "x": -102.5,
+    "z": 97.5
+  },
+  "defenderSpawn": {
+    "x": 107.5,
+    "z": -102.5
+  },
+  "bombSites": [
+    {
+      "id": "A",
+      "x": 100,
+      "z": 70,
+      "radius": 10
+    },
+    {
+      "id": "B",
+      "x": -100,
+      "z": -90,
+      "radius": 10
+    }
+  ],
+  "objects": [
+    {
+      "id": "city-1",
+      "type": "wall",
+      "material": "plaster",
+      "x": -95,
+      "z": -125,
+      "w": 90,
+      "d": 10,
+      "h": 10
+    },
+    {
+      "id": "city-2",
+      "type": "wall",
+      "material": "whiteBrick",
+      "x": 10,
+      "z": -125,
+      "w": 120,
+      "d": 10,
+      "h": 11
+    },
+    {
+      "id": "city-3",
+      "type": "wall",
+      "material": "whiteBrick",
+      "x": 105,
+      "z": -125,
+      "w": 70,
+      "d": 10,
+      "h": 11
+    },
+    {
+      "id": "city-4",
+      "type": "wall",
+      "material": "plaster",
+      "x": -135,
+      "z": -60,
+      "w": 10,
+      "d": 120,
+      "h": 10
+    },
+    {
+      "id": "city-5",
+      "type": "wall",
+      "material": "whiteBrick",
+      "x": 135,
+      "z": -87.5,
+      "w": 10,
+      "d": 65,
+      "h": 11
+    },
+    {
+      "id": "city-6",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 57.5,
+      "z": -85,
+      "w": 5,
+      "d": 10,
+      "h": 10
+    },
+    {
+      "id": "city-7",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 92.5,
+      "z": -85,
+      "w": 5,
+      "d": 10,
+      "h": 10
+    },
+    {
+      "id": "city-8",
+      "type": "wall",
+      "material": "whiteBrick",
+      "x": 17.5,
+      "z": -82.5,
+      "w": 15,
+      "d": 5,
+      "h": 11
+    },
+    {
+      "id": "city-9",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 52.5,
+      "z": -82.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-10",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 97.5,
+      "z": -82.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-11",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 45,
+      "z": -77.5,
+      "w": 10,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-12",
+      "type": "wall",
+      "material": "masonry",
+      "x": 55,
+      "z": -77.5,
+      "w": 10,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-13",
+      "type": "wall",
+      "material": "masonry",
+      "x": 95,
+      "z": -77.5,
+      "w": 10,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-14",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 105,
+      "z": -77.5,
+      "w": 10,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-15",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 42.5,
+      "z": -72.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-16",
+      "type": "wall",
+      "material": "masonry",
+      "x": 50,
+      "z": -72.5,
+      "w": 10,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-17",
+      "type": "wall",
+      "material": "masonry",
+      "x": 100,
+      "z": -72.5,
+      "w": 10,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-18",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 107.5,
+      "z": -72.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-19",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 37.5,
+      "z": -65,
+      "w": 5,
+      "d": 10,
+      "h": 10
+    },
+    {
+      "id": "city-20",
+      "type": "wall",
+      "material": "masonry",
+      "x": 45,
+      "z": -67.5,
+      "w": 10,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-21",
+      "type": "wall",
+      "material": "masonry",
+      "x": 105,
+      "z": -67.5,
+      "w": 10,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-22",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 112.5,
+      "z": -65,
+      "w": 5,
+      "d": 10,
+      "h": 10
+    },
+    {
+      "id": "city-23",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 32.5,
+      "z": -60,
+      "w": 5,
+      "d": 10,
+      "h": 10
+    },
+    {
+      "id": "city-24",
+      "type": "wall",
+      "material": "masonry",
+      "x": 42.5,
+      "z": -60,
+      "w": 5,
+      "d": 10,
+      "h": 14
+    },
+    {
+      "id": "city-25",
+      "type": "wall",
+      "material": "masonry",
+      "x": 107.5,
+      "z": -60,
+      "w": 5,
+      "d": 10,
+      "h": 14
+    },
+    {
+      "id": "city-26",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 117.5,
+      "z": -60,
+      "w": 5,
+      "d": 10,
+      "h": 10
+    },
+    {
+      "id": "city-27",
+      "type": "wall",
+      "material": "masonry",
+      "x": 37.5,
+      "z": -57.5,
+      "w": 5,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-28",
+      "type": "wall",
+      "material": "masonry",
+      "x": 112.5,
+      "z": -57.5,
+      "w": 5,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-29",
+      "type": "wall",
+      "material": "sandstone",
+      "x": 137.5,
+      "z": -17.5,
+      "w": 5,
+      "d": 75,
+      "h": 9
+    },
+    {
+      "id": "city-30",
+      "type": "wall",
+      "material": "plaster",
+      "x": -127.5,
+      "z": -12.5,
+      "w": 5,
+      "d": 75,
+      "h": 10
+    },
+    {
+      "id": "city-31",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 35,
+      "z": -27.5,
+      "w": 10,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-32",
+      "type": "wall",
+      "material": "masonry",
+      "x": 42.5,
+      "z": -25,
+      "w": 5,
+      "d": 10,
+      "h": 14
+    },
+    {
+      "id": "city-33",
+      "type": "wall",
+      "material": "masonry",
+      "x": 107.5,
+      "z": -25,
+      "w": 5,
+      "d": 10,
+      "h": 14
+    },
+    {
+      "id": "city-34",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 115,
+      "z": -27.5,
+      "w": 10,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-35",
+      "type": "wall",
+      "material": "sandstone",
+      "x": 132.5,
+      "z": -5,
+      "w": 5,
+      "d": 50,
+      "h": 9
+    },
+    {
+      "id": "city-36",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 37.5,
+      "z": -22.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-37",
+      "type": "wall",
+      "material": "masonry",
+      "x": 47.5,
+      "z": -20,
+      "w": 5,
+      "d": 10,
+      "h": 14
+    },
+    {
+      "id": "city-38",
+      "type": "wall",
+      "material": "masonry",
+      "x": 102.5,
+      "z": -20,
+      "w": 5,
+      "d": 10,
+      "h": 14
+    },
+    {
+      "id": "city-39",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 112.5,
+      "z": -22.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-40",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 42.5,
+      "z": -15,
+      "w": 5,
+      "d": 10,
+      "h": 10
+    },
+    {
+      "id": "city-41",
+      "type": "wall",
+      "material": "masonry",
+      "x": 52.5,
+      "z": -15,
+      "w": 5,
+      "d": 10,
+      "h": 14
+    },
+    {
+      "id": "city-42",
+      "type": "wall",
+      "material": "masonry",
+      "x": 97.5,
+      "z": -15,
+      "w": 5,
+      "d": 10,
+      "h": 14
+    },
+    {
+      "id": "city-43",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 107.5,
+      "z": -15,
+      "w": 5,
+      "d": 10,
+      "h": 10
+    },
+    {
+      "id": "city-44",
+      "type": "wall",
+      "material": "brick",
+      "x": -77.5,
+      "z": 7.5,
+      "w": 5,
+      "d": 45,
+      "h": 9
+    },
+    {
+      "id": "city-45",
+      "type": "wall",
+      "material": "plaster",
+      "x": -70,
+      "z": 5,
+      "w": 10,
+      "d": 40,
+      "h": 10
+    },
+    {
+      "id": "city-46",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 47.5,
+      "z": -12.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-47",
+      "type": "wall",
+      "material": "masonry",
+      "x": 57.5,
+      "z": -12.5,
+      "w": 5,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-48",
+      "type": "wall",
+      "material": "masonry",
+      "x": 92.5,
+      "z": -12.5,
+      "w": 5,
+      "d": 5,
+      "h": 14
+    },
+    {
+      "id": "city-49",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 102.5,
+      "z": -12.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-50",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 55,
+      "z": -7.5,
+      "w": 10,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-51",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 95,
+      "z": -7.5,
+      "w": 10,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-52",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 57.5,
+      "z": -2.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-53",
+      "type": "wall",
+      "material": "darkConcrete",
+      "x": 92.5,
+      "z": -2.5,
+      "w": 5,
+      "d": 5,
+      "h": 10
+    },
+    {
+      "id": "city-54",
+      "type": "wall",
+      "material": "plaster",
+      "x": -135,
+      "z": 12.5,
+      "w": 10,
+      "d": 25,
+      "h": 10
+    },
+    {
+      "id": "city-55",
+      "type": "wall",
+      "material": "sandstone",
+      "x": 135,
+      "z": 75,
+      "w": 10,
+      "d": 110,
+      "h": 12
+    },
+    {
+      "id": "city-56",
+      "type": "wall",
+      "material": "sandstone",
+      "x": -132.5,
+      "z": 45,
+      "w": 15,
+      "d": 40,
+      "h": 9
+    },
+    {
+      "id": "city-57",
+      "type": "wall",
+      "material": "sandstone",
+      "x": -70,
+      "z": 27.5,
+      "w": 10,
+      "d": 5,
+      "h": 9
+    },
+    {
+      "id": "city-58",
+      "type": "wall",
+      "material": "sandstone",
+      "x": 40,
+      "z": 55,
+      "w": 30,
+      "d": 10,
+      "h": 9
+    },
+    {
+      "id": "city-59",
+      "type": "wall",
+      "material": "sandstone",
+      "x": 60,
+      "z": 55,
+      "w": 10,
+      "d": 10,
+      "h": 12
+    },
+    {
+      "id": "city-60",
+      "type": "wall",
+      "material": "redBand",
+      "x": 42.5,
+      "z": 62.5,
+      "w": 35,
+      "d": 5,
+      "h": 8
+    },
+    {
+      "id": "city-61",
+      "type": "wall",
+      "material": "sandstone",
+      "x": 62.5,
+      "z": 62.5,
+      "w": 5,
+      "d": 5,
+      "h": 12
+    },
+    {
+      "id": "city-62",
+      "type": "wall",
+      "material": "masonry",
+      "x": -132.5,
+      "z": 67.5,
+      "w": 15,
+      "d": 5,
+      "h": 9
+    },
+    {
+      "id": "city-63",
+      "type": "wall",
+      "material": "masonry",
+      "x": -135,
+      "z": 100,
+      "w": 10,
+      "d": 60,
+      "h": 9
+    },
+    {
+      "id": "city-64",
+      "type": "wall",
+      "material": "masonry",
+      "x": -20,
+      "z": 122.5,
+      "w": 120,
+      "d": 15,
+      "h": 9
+    },
+    {
+      "id": "city-65",
+      "type": "wall",
+      "material": "masonry",
+      "x": 50,
+      "z": 122.5,
+      "w": 20,
+      "d": 15,
+      "h": 9
+    },
+    {
+      "id": "city-66",
+      "type": "wall",
+      "material": "sandstone",
+      "x": 95,
+      "z": 122.5,
+      "w": 70,
+      "d": 15,
+      "h": 12
+    },
+    {
+      "id": "city-67",
+      "type": "wall",
+      "material": "masonry",
+      "x": -105,
+      "z": 125,
+      "w": 50,
+      "d": 10,
+      "h": 9
+    },
+    {
+      "id": "mid-door-left",
+      "type": "wall",
+      "material": "blueMetal",
+      "x": -5.5,
+      "z": 13,
+      "w": 6,
+      "d": 1.5,
+      "h": 6
+    },
+    {
+      "id": "mid-door-right",
+      "type": "wall",
+      "material": "blueMetal",
+      "x": 5.5,
+      "z": 13,
+      "w": 6,
+      "d": 1.5,
+      "h": 6
+    },
+    {
+      "id": "mid-door-frame-west",
+      "type": "wall",
+      "material": "masonry",
+      "x": -10,
+      "z": 13,
+      "w": 2.5,
+      "d": 5,
+      "h": 9
+    },
+    {
+      "id": "mid-door-frame-east",
+      "type": "wall",
+      "material": "masonry",
+      "x": 10,
+      "z": 13,
+      "w": 2.5,
+      "d": 5,
+      "h": 9
+    },
+    {
+      "id": "mid-cover-a",
+      "type": "crate",
+      "material": "wood",
+      "x": -16,
+      "z": -5,
+      "w": 5,
+      "d": 5,
+      "h": 5
+    },
+    {
+      "id": "mid-cover-b",
+      "type": "crate",
+      "material": "wood",
+      "x": 14,
+      "z": 5,
+      "w": 5,
+      "d": 5,
+      "h": 5
+    },
+    {
+      "id": "mid-cover-c",
+      "type": "wall",
+      "material": "sandstone",
+      "x": 2,
+      "z": -19,
+      "w": 13,
+      "d": 3,
+      "h": 5
+    },
+    {
+      "id": "site-a-box-1",
+      "type": "crate",
+      "material": "wood",
+      "x": 94,
+      "z": 74,
+      "w": 7,
+      "d": 7,
+      "h": 6
+    },
+    {
+      "id": "site-a-box-2",
+      "type": "crate",
+      "material": "wood",
+      "x": 104,
+      "z": 62,
+      "w": 5,
+      "d": 10,
+      "h": 6
+    },
+    {
+      "id": "site-a-box-3",
+      "type": "crate",
+      "material": "tech",
+      "x": 82,
+      "z": 65,
+      "w": 6,
+      "d": 6,
+      "h": 5
+    },
+    {
+      "id": "site-a-cover",
+      "type": "wall",
+      "material": "redBand",
+      "x": 111,
+      "z": 77,
+      "w": 3,
+      "d": 24,
+      "h": 7
+    },
+    {
+      "id": "site-a-ramp",
+      "type": "ramp",
+      "material": "concrete",
+      "direction": "north",
+      "x": 72,
+      "z": 54,
+      "w": 10,
+      "d": 18,
+      "h": 7
+    },
+    {
+      "id": "site-b-box-1",
+      "type": "crate",
+      "material": "wood",
+      "x": -117,
+      "z": -105,
+      "w": 8,
+      "d": 8,
+      "h": 6
+    },
+    {
+      "id": "site-b-box-2",
+      "type": "crate",
+      "material": "wood",
+      "x": -83,
+      "z": -79,
+      "w": 6,
+      "d": 12,
+      "h": 6
+    },
+    {
+      "id": "site-b-box-3",
+      "type": "crate",
+      "material": "tech",
+      "x": -112,
+      "z": -70,
+      "w": 6,
+      "d": 6,
+      "h": 5
+    },
+    {
+      "id": "site-b-cover",
+      "type": "wall",
+      "material": "whiteBrick",
+      "x": -72,
+      "z": -91,
+      "w": 3,
+      "d": 24,
+      "h": 8
+    },
+    {
+      "id": "tunnel-ramp",
+      "type": "ramp",
+      "material": "brick",
+      "direction": "south",
+      "x": -76,
+      "z": -48,
+      "w": 12,
+      "d": 18,
+      "h": 6
+    },
+    {
+      "id": "long-cover-1",
+      "type": "crate",
+      "material": "wood",
+      "x": -32,
+      "z": 92,
+      "w": 7,
+      "d": 7,
+      "h": 6
+    },
+    {
+      "id": "long-cover-2",
+      "type": "crate",
+      "material": "wood",
+      "x": 28,
+      "z": 98,
+      "w": 7,
+      "d": 7,
+      "h": 6
+    },
+    {
+      "id": "long-cover-3",
+      "type": "wall",
+      "material": "sandstone",
+      "x": 57,
+      "z": 88,
+      "w": 3,
+      "d": 22,
+      "h": 6
+    },
+    {
+      "id": "catwalk-ramp",
+      "type": "ramp",
+      "material": "masonry",
+      "direction": "east",
+      "x": 47,
+      "z": 39,
+      "w": 13,
+      "d": 20,
+      "h": 8
+    },
+    {
+      "id": "colosseum-column-2",
+      "type": "wall",
+      "material": "masonry",
+      "x": 99.9,
+      "z": -34.7,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-3",
+      "type": "wall",
+      "material": "plaster",
+      "x": 94.1,
+      "z": -25.9,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-4",
+      "type": "wall",
+      "material": "masonry",
+      "x": 85.3,
+      "z": -20.1,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-6",
+      "type": "wall",
+      "material": "masonry",
+      "x": 64.7,
+      "z": -20.1,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-7",
+      "type": "wall",
+      "material": "plaster",
+      "x": 55.9,
+      "z": -25.9,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-8",
+      "type": "wall",
+      "material": "masonry",
+      "x": 50.1,
+      "z": -34.7,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-10",
+      "type": "wall",
+      "material": "masonry",
+      "x": 50.1,
+      "z": -55.3,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-11",
+      "type": "wall",
+      "material": "plaster",
+      "x": 55.9,
+      "z": -64.1,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-12",
+      "type": "wall",
+      "material": "masonry",
+      "x": 64.7,
+      "z": -69.9,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-14",
+      "type": "wall",
+      "material": "masonry",
+      "x": 85.3,
+      "z": -69.9,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-15",
+      "type": "wall",
+      "material": "plaster",
+      "x": 94.1,
+      "z": -64.1,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "colosseum-column-16",
+      "type": "wall",
+      "material": "masonry",
+      "x": 99.9,
+      "z": -55.3,
+      "w": 3.2,
+      "d": 3.2,
+      "h": 16
+    },
+    {
+      "id": "roof-stand-nw",
+      "type": "ramp",
+      "material": "darkConcrete",
+      "direction": "south",
+      "x": 59,
+      "z": -72,
+      "w": 12,
+      "d": 7,
+      "h": 9
+    },
+    {
+      "id": "roof-stand-ne",
+      "type": "ramp",
+      "material": "darkConcrete",
+      "direction": "south",
+      "x": 91,
+      "z": -72,
+      "w": 12,
+      "d": 7,
+      "h": 9
+    },
+    {
+      "id": "roof-stand-sw",
+      "type": "ramp",
+      "material": "darkConcrete",
+      "direction": "north",
+      "x": 59,
+      "z": -18,
+      "w": 12,
+      "d": 7,
+      "h": 9
+    },
+    {
+      "id": "roof-stand-se",
+      "type": "ramp",
+      "material": "darkConcrete",
+      "direction": "north",
+      "x": 91,
+      "z": -18,
+      "w": 12,
+      "d": 7,
+      "h": 9
+    },
+    {
+      "id": "roof-stand-west-n",
+      "type": "ramp",
+      "material": "darkConcrete",
+      "direction": "east",
+      "x": 48,
+      "z": -60,
+      "w": 7,
+      "d": 12,
+      "h": 9
+    },
+    {
+      "id": "roof-stand-west-s",
+      "type": "ramp",
+      "material": "darkConcrete",
+      "direction": "east",
+      "x": 48,
+      "z": -30,
+      "w": 7,
+      "d": 12,
+      "h": 9
+    },
+    {
+      "id": "roof-stand-east-n",
+      "type": "ramp",
+      "material": "darkConcrete",
+      "direction": "west",
+      "x": 102,
+      "z": -60,
+      "w": 7,
+      "d": 12,
+      "h": 9
+    },
+    {
+      "id": "roof-stand-east-s",
+      "type": "ramp",
+      "material": "darkConcrete",
+      "direction": "west",
+      "x": 102,
+      "z": -30,
+      "w": 7,
+      "d": 12,
+      "h": 9
+    },
+    {
+      "id": "colosseum-center-cover",
+      "type": "wall",
+      "material": "redBand",
+      "x": 75,
+      "z": -45,
+      "w": 12,
+      "d": 3,
+      "h": 4
+    },
+    {
+      "id": "colosseum-crate-west",
+      "type": "crate",
+      "material": "wood",
+      "x": 62,
+      "z": -41,
+      "w": 5,
+      "d": 5,
+      "h": 5
+    },
+    {
+      "id": "colosseum-crate-east",
+      "type": "crate",
+      "material": "wood",
+      "x": 88,
+      "z": -49,
+      "w": 5,
+      "d": 5,
+      "h": 5
+    },
+    {
+      "id": "colosseum-main-platform",
+      "type": "platform",
+      "material": "concrete",
+      "x": 75,
+      "z": -35,
+      "w": 22,
+      "d": 13,
+      "h": 2.4
+    },
+    {
+      "id": "colosseum-platform-ramp",
+      "type": "ramp",
+      "material": "concrete",
+      "direction": "north",
+      "x": 75,
+      "z": -25,
+      "w": 10,
+      "d": 8,
+      "h": 2.4
+    }
+  ],
+  "updatedAt": 1785594500742
+}

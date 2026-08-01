@@ -24,6 +24,7 @@
           <button class="menu-button workshop-button" data-open="workshop-menu">Конструктор карт <small>МАСТЕРСКАЯ</small></button>
           <button class="menu-button" data-open="team-menu">Выбор команды <small id="team-label">Автовыбор</small></button>
           <button class="menu-button" data-open="knife-menu">Выбор ножа <small id="knife-label">Стандартный</small></button>
+          <button class="menu-button promo-button" data-open="promo-menu">Промокоды <small id="promo-label">ВВЕСТИ КОД</small></button>
           <button class="menu-button" data-open="settings-menu">Настройки</button>
           <button class="menu-button" data-open="controls-menu">Управление</button>
           <button class="menu-button" data-open="about-menu">Об игре</button>
@@ -96,7 +97,7 @@
               <div class="builder-fields three"><label>Ширина<input id="builder-width" type="number" min="40" max="480" value="96" /></label><label>Глубина<input id="builder-depth" type="number" min="40" max="480" value="96" /></label><label>Пол<select id="builder-floor"></select></label></div>
               <strong class="builder-caption">Инструменты</strong>
               <div class="builder-tools">
-                <button class="selected" data-builder-tool="select">Выбор</button><button data-builder-tool="wall">Стена</button><button data-builder-tool="crate">Ящик</button><button data-builder-tool="ramp">Рампа</button><button data-builder-tool="erase">Ластик</button>
+                <button class="selected" data-builder-tool="select">Выбор</button><button data-builder-tool="wall">Стена</button><button data-builder-tool="crate">Ящик</button><button data-builder-tool="platform">Платформа</button><button data-builder-tool="ramp">Рампа</button><button data-builder-tool="erase">Ластик</button>
                 <button data-builder-tool="attacker">Точка T</button><button data-builder-tool="defender">Точка CT</button><button data-builder-tool="siteA">Плэнт A</button><button data-builder-tool="siteB">Плэнт B</button>
               </div>
               <div class="builder-property-tabs" role="tablist" aria-label="Свойства объекта"><button class="selected" data-builder-property-tab="object">Объект</button><button data-builder-property-tab="textures">Текстуры</button></div>
@@ -125,11 +126,41 @@
       <section id="knife-menu" class="screen panel-screen" aria-label="Выбор ножа">
         <div class="panel wide"><button class="back-button" data-back>← Назад</button><p class="eyebrow">ЛИЧНОЕ СНАРЯЖЕНИЕ</p><h2>Выбор ножа</h2>
           <div class="knife-layout"><canvas id="knife-preview"></canvas><div class="knife-options">
-            <div class="segmented"><button data-knife="standard">Стандартный</button><button class="selected" data-knife="butterfly">Бабочка</button><button data-knife="karambit">Керамбит</button></div>
-            <label>Оформление<select id="knife-skin"><option value="classic">Классический металл</option><option value="black">Чёрный</option><option value="blue">Синий градиент</option><option value="waves">Волны — чёрно-синие</option><option value="red">Красный градиент</option><option value="gold">Золотой</option><option value="rainbow">Радужный</option><option value="marble">Мраморный</option><option value="carbon">Карбоновый</option></select></label>
+            <div class="segmented"><button data-knife="standard">Стандартный</button><button class="selected" data-knife="butterfly">Бабочка</button><button data-knife="karambit">Керамбит</button><button data-knife="m9">M9</button></div>
+            <label>Оформление<select id="knife-skin"><option value="classic">Классический металл</option><option value="black">Чёрный</option><option value="blue">Синий градиент</option><option value="waves">Волны — чёрно-синие</option><option value="doodle">Граффити — чёрно-бело-фиолетовое</option><option value="red">Красный градиент</option><option value="gold">Золотой</option><option value="rainbow">Радужный</option><option value="marble">Мраморный</option><option value="carbon">Карбоновый</option></select></label>
             <div class="button-row"><button id="inspect-knife" class="secondary">Осмотреть</button><button id="select-knife" class="accent">Выбрать</button></div>
             <p id="knife-status" class="status-line">Выбран нож-бабочка</p>
           </div></div>
+        </div>
+      </section>
+
+      <section id="promo-menu" class="screen panel-screen" aria-label="Промокоды и админ-меню">
+        <div class="panel promo-panel">
+          <button class="back-button" data-back>← Назад</button>
+          <p class="eyebrow">ЦЕНТР ДОСТУПА</p><h2>Промокоды</h2>
+          <div class="promo-tabs" role="tablist"><button class="selected" data-promo-tab="codes">Промокоды</button><button data-promo-tab="admin">Админ-меню <span id="admin-lock-mark">🔒</span></button></div>
+          <div class="promo-page active" data-promo-page="codes">
+            <p class="lead">Введите код доступа. Успешная активация сохраняется на этом устройстве.</p>
+            <div class="promo-redeem"><input id="promo-code-input" maxlength="32" autocomplete="off" spellcheck="false" placeholder="ВВЕДИТЕ ПРОМОКОД" /><button id="promo-redeem" class="accent">Активировать</button></div>
+            <p id="promo-status" class="status-line" role="status">Код ещё не активирован</p>
+          </div>
+          <div class="promo-page" data-promo-page="admin">
+            <div id="admin-locked" class="admin-locked"><strong>ДОСТУП ЗАКРЫТ</strong><span>Сначала активируйте админ-промокод во вкладке «Промокоды».</span></div>
+            <div id="admin-controls" class="admin-controls" hidden>
+              <div class="admin-warning">ТОЛЬКО ОДИНОЧНЫЙ МАТЧ · В СЕТЕВОЙ ИГРЕ КОМАНДЫ ЗАБЛОКИРОВАНЫ</div>
+              <div class="admin-grid">
+                <button data-admin-action="god" data-admin-toggle>Бессмертие <small>ВЫКЛ</small></button>
+                <button data-admin-action="ammo" data-admin-toggle>Бесконечные патроны <small>ВЫКЛ</small></button>
+                <button data-admin-action="freeze" data-admin-toggle>Заморозить ботов <small>ВЫКЛ</small></button>
+                <button data-admin-action="heal">Здоровье + броня</button>
+                <button data-admin-action="cash">Выдать $16000</button>
+                <button data-admin-action="siteA">Телепорт на A</button>
+                <button data-admin-action="siteB">Телепорт на B</button>
+                <button data-admin-action="spawn">Телепорт на базу</button>
+              </div>
+              <p id="admin-status" class="status-line">Запустите одиночный матч и откройте это меню через паузу.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -198,7 +229,7 @@
         </div>
         <div id="scoreboard" class="game-modal"><h2>ТАБЛИЦА СЧЁТА</h2><div class="score-columns"><span>ИГРОК</span><span>У</span><span>С</span><span>ПОМ</span><span>ДЕНЬГИ</span><span>СТАТУС</span><span>ПИНГ</span></div><div id="score-rows"></div></div>
         <div id="buy-menu" class="game-modal buy-modal"><header><div><small>ЗОНА ПОКУПКИ</small><h2>СНАРЯЖЕНИЕ</h2></div><strong id="buy-money">$800</strong></header><div class="buy-layout"><nav id="buy-categories"></nav><div id="buy-items"></div></div><footer><span>B / ESC — ЗАКРЫТЬ</span><span id="buy-time">ОСТАЛОСЬ 25 СЕК.</span></footer></div>
-        <div id="pause-menu" class="game-modal pause-modal"><p class="eyebrow">ИГРА ПРИОСТАНОВЛЕНА</p><h2>Пауза</h2><button id="resume-game" class="accent">Продолжить</button><button id="pause-settings">Настройки</button><button id="leave-match" class="danger">В главное меню</button></div>
+        <div id="pause-menu" class="game-modal pause-modal"><p class="eyebrow">ИГРА ПРИОСТАНОВЛЕНА</p><h2>Пауза</h2><button id="resume-game" class="accent">Продолжить</button><button id="pause-settings">Настройки</button><button id="pause-admin">Промокоды / Админ</button><button id="leave-match" class="danger">В главное меню</button></div>
         <div id="round-end" class="round-banner"><small>РАУНД ЗАВЕРШЁН</small><strong id="round-result">СПЕЦНАЗ ПОБЕДИЛ</strong><span id="round-reason">Цель защищена</span></div>
         <div id="death-screen"><div class="spectator-card"><strong>ВЫ ПОГИБЛИ</strong><span id="spectating">Наблюдение за союзником</span><small id="spectator-help">E — подключиться за бота · ESC — меню</small></div></div>
       </section>

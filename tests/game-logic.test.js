@@ -35,6 +35,7 @@ import { WORKSHOP_IMPORT_MAX_BYTES, WorkshopStore, createWorkshopMap, parseWorks
 import { MATERIAL_ATLAS_CELLS } from '../src/map/MaterialLibrary.js';
 import { MapWorkshop } from '../src/ui/MapWorkshop.js';
 import { MAIN_SAND_TEXTURE_URL } from '../src/map/DustInspiredMap.js';
+import { ADMIN_PROMO_CODES, normalizePromoCode } from '../src/ui/PromoAdminMenu.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -465,6 +466,24 @@ test('керамбит имеет кольцо, изогнутый клинок 
   assert.ok(bladeSize.y>1.7);assert.ok(bladeSize.x>1.1);assert.ok(ring.geometry.parameters.radius>=.2);assert.ok(Math.abs(ring.rotation.x-Math.PI/2)<.001);assert.ok(pivot.position.z>.9);
   manager.drawTime=0;knife.inspecting=2;manager.update(.08);
   assert.notEqual(pivot.rotation.y,0);assert.notEqual(manager.group.rotation.z,manager.group.userData.baseRotation.z);
+});
+
+test('M9 имеет широкий клинок, отверстие, насечки и граффити-оформление',()=>{
+  const knife=new Knife(WEAPONS.knife,'m9','doodle');const player={alive:true,velocity:new THREE.Vector3(),inventory:{active:knife}};
+  const manager=new WeaponManager(new THREE.Group(),player,{}, {}, {knifeStyle:()=>KNIFE_SKINS.doodle});
+  assert.ok(manager.group.getObjectByName('m9-pivot'));assert.ok(manager.group.getObjectByName('m9-blade'));assert.ok(manager.group.getObjectByName('m9-guard-ring'));
+  assert.ok(manager.group.getObjectByName('m9-grip-rib'));assert.equal(manager.group.getObjectsByProperty('name','m9-serration').length,7);assert.equal(KNIFE_SKINS.doodle.pattern,'doodle');
+  const blade=manager.group.getObjectByName('m9-blade');assert.equal(blade.material.userData.doodle,true);manager.drawTime=0;knife.inspecting=1.5;manager.update(.08);assert.notEqual(manager.group.getObjectByName('m9-pivot').rotation.x,0);
+});
+
+test('ящики и платформы имеют верхнюю коллизию и доступны для запрыгивания',()=>{
+  const collision=new CollisionWorld({size:{width:40,depth:40},walls:[],crates:[{x:8,y:1,z:0,w:4,d:4,h:2}],platforms:[{x:0,y:1,z:0,w:6,d:6,h:2}],ramps:[]});
+  assert.equal(collision.groundHeightAt(0,0),2);assert.equal(collision.groundHeightAt(8,0),2);assert.equal(collision.groundHeightAt(0,0,.65),0);
+  const mantle=collision.findMantle(new THREE.Vector3(0,0,4),new THREE.Vector3(0,0,-1),.58,6.2);assert.ok(mantle);assert.equal(mantle.y,2);
+});
+
+test('админ-промокоды нормализуются и остаются локальными константами',()=>{
+  assert.ok(ADMIN_PROMO_CODES.includes(normalizePromoCode(' dust-admin-2026 ')));assert.ok(ADMIN_PROMO_CODES.includes('COLOSSEUM-ROOT'));
 });
 
 test('наблюдение выбирает только живого союзного бота и сохраняет выбранного',()=>{
