@@ -20,7 +20,8 @@
           <button id="quick-match" class="menu-button">Быстрый матч</button>
           <button class="menu-button online-button" data-open="online-menu">Онлайн 1 на 1 <small>КОМНАТЫ</small></button>
           <button class="menu-button" data-open="mode-menu">Выбор режима <small id="mode-label">Закладка бомбы</small></button>
-          <button class="menu-button" data-open="map-menu">Выбор карты <small>de_sandstorm2</small></button>
+          <button class="menu-button" data-open="map-menu">Выбор карты <small id="map-label">de_sandstorm2</small></button>
+          <button class="menu-button workshop-button" data-open="workshop-menu">Конструктор карт <small>МАСТЕРСКАЯ</small></button>
           <button class="menu-button" data-open="team-menu">Выбор команды <small id="team-label">Автовыбор</small></button>
           <button class="menu-button" data-open="knife-menu">Выбор ножа <small id="knife-label">Стандартный</small></button>
           <button class="menu-button" data-open="settings-menu">Настройки</button>
@@ -79,7 +80,38 @@
 
       <section id="map-menu" class="screen panel-screen" aria-label="Выбор карты">
         <div class="panel"><button class="back-button" data-back>← Назад</button><p class="eyebrow">РАЙОН ОПЕРАЦИИ</p><h2>de_sandstorm2</h2>
-          <div class="map-card"><div class="map-schematic"><i>A</i><i>B</i><span></span></div><div><strong>Песчаный приграничный город</strong><p>Два плэнта, центр с двойными дверями, тоннели, короткий и длинный маршруты.</p><span class="tag">ВЫБРАНО</span></div></div>
+          <div class="map-card"><div class="map-schematic"><i>A</i><i>B</i><span></span></div><div><strong>Песчаный приграничный город</strong><p>Два плэнта, центр с двойными дверями, тоннели, короткий и длинный маршруты.</p><div class="button-row map-actions"><button id="select-default-map" class="accent">Выбрать</button><button data-open="workshop-menu">Открыть мастерскую</button></div></div></div>
+        </div>
+      </section>
+
+      <section id="workshop-menu" class="screen panel-screen" aria-label="Конструктор карт">
+        <div class="panel workshop-panel">
+          <header class="workshop-header">
+            <div><button class="back-button" data-back>← Назад</button><p class="eyebrow">КАРТЫ ИГРОКОВ</p><h2>Мастерская карт</h2></div>
+            <div class="button-row"><button id="builder-new" class="secondary">Новая карта</button><button id="workshop-import" class="accent">Импорт JSON</button><input id="workshop-import-file" type="file" accept=".json,application/json" hidden /></div>
+          </header>
+          <div class="workshop-layout">
+            <aside class="builder-sidebar">
+              <div class="builder-fields two"><label>Название<input id="builder-map-name" maxlength="40" value="Новая карта" /></label><label>Автор<input id="builder-author" maxlength="24" value="Игрок" /></label></div>
+              <div class="builder-fields three"><label>Ширина<input id="builder-width" type="number" min="40" max="220" value="96" /></label><label>Глубина<input id="builder-depth" type="number" min="40" max="220" value="96" /></label><label>Пол<select id="builder-floor"></select></label></div>
+              <strong class="builder-caption">Инструменты</strong>
+              <div class="builder-tools">
+                <button class="selected" data-builder-tool="select">Выбор</button><button data-builder-tool="wall">Стена</button><button data-builder-tool="crate">Ящик</button><button data-builder-tool="erase">Ластик</button>
+                <button data-builder-tool="attacker">Точка T</button><button data-builder-tool="defender">Точка CT</button><button data-builder-tool="siteA">Плэнт A</button><button data-builder-tool="siteB">Плэнт B</button>
+              </div>
+              <strong class="builder-caption">3D-объект</strong>
+              <div class="builder-fields four"><label>Шир.<input id="builder-object-width" type="number" min="0.8" max="80" step="0.5" value="8" /></label><label>Глуб.<input id="builder-object-depth" type="number" min="0.8" max="80" step="0.5" value="2" /></label><label>Выс.<input id="builder-object-height" type="number" min="0.5" max="24" step="0.5" value="5" /></label><label>Текстура<select id="builder-material"></select></label></div>
+              <div class="button-row builder-object-actions"><button id="builder-update-object" class="secondary">Применить</button><button id="builder-delete-object" class="danger">Удалить объект</button></div>
+              <div class="button-row builder-save-actions"><button id="builder-save" class="accent">Сохранить</button><button id="builder-export" class="secondary">Скачать JSON</button></div>
+              <p id="builder-status" class="status-line">ЛКМ — поставить или выбрать, ПКМ — повернуть, колесо — масштаб</p>
+            </aside>
+            <main class="builder-main">
+              <div id="builder-viewport" aria-label="Трёхмерный редактор карты"></div>
+              <small class="builder-hint">Объекты автоматически получают физическую коллизию. Точки T/CT используются для появления игроков и ботов.</small>
+              <div class="workshop-library-header"><div><p class="eyebrow">ЛОКАЛЬНАЯ БИБЛИОТЕКА</p><h3>Мои карты</h3></div><small>Экспортируйте JSON и отправьте файл другу</small></div>
+              <div id="workshop-library" class="workshop-library"></div>
+            </main>
+          </div>
         </div>
       </section>
 

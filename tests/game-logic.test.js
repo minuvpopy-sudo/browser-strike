@@ -31,6 +31,7 @@ import { selectSpectatorTarget, takeOverBotState } from '../src/core/SpectatorMo
 import { SHOT_PROFILES, SHOT_SAMPLES, shotProfile, spatialShotMix } from '../src/core/AudioManager.js';
 import { cleanPlayerName, createRoomCode, normalizeRoomCode, roomPeerId } from '../src/network/OnlineSession.js';
 import { RemotePlayer } from '../src/network/RemotePlayer.js';
+import { WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../src/map/WorkshopMap.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -100,6 +101,29 @@ test('нож-бабочка имеет две шарнирные рукояти 
 test('карта увеличена вместе с геометрией и точками',()=>{
   assert.ok(MAP_CONFIG.size.width>150);assert.ok(Math.abs(MAP_CONFIG.attackerSpawns[0].x)>50);
   assert.equal(MAP_CONFIG.walls[0].w,128*MAP_CONFIG.scale);
+});
+
+test('конструктор создаёт игровую карту с навигацией и коллизиями',()=>{
+  const map=createWorkshopMap({name:'Карта игрока',author:'Тестер',width:104,depth:88});
+  map.objects.push({id:'test-metal',type:'wall',x:0,z:18,w:12,d:2,h:6,material:'metal'});
+  const config=workshopMapToConfig(map);const collision=new CollisionWorld(config);const graph=new NavigationGraph(config);
+  assert.equal(config.custom,true);assert.equal(config.floorMaterial,'concrete');assert.ok(config.nodes.length>20);assert.ok(config.links.length>20);
+  assert.equal(collision.intersects(0,18,.5),true);assert.equal(collision.intersects(config.attackerSpawns[0].x,config.attackerSpawns[0].z,.5),false);
+  assert.ok(graph.path(config.attackerSpawns[0],config.bombSites[0]).length>1);
+});
+
+test('файл мастерской безопасно проверяется, экспортируется и импортируется',()=>{
+  const source=createWorkshopMap({name:'<b>Очень длинная пользовательская карта</b>'});
+  source.objects.push({id:'huge',type:'crate',x:999,z:-999,w:999,d:999,h:999,material:'unknown'});
+  const clean=sanitizeWorkshopMap(source);const imported=parseWorkshopMap(serializeWorkshopMap(clean));const object=imported.objects.at(-1);
+  assert.equal(imported.format,'browser-strike-map');assert.equal(imported.name.includes('<'),false);assert.ok(object.w<=80);assert.ok(object.h<=24);assert.equal(object.material,'wood');
+  assert.throws(()=>parseWorkshopMap('{"format":"other"}'),/мастерской/);
+});
+
+test('локальная мастерская сохраняет и удаляет карты игроков',()=>{
+  const values=new Map();const storage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)};const store=new WorkshopStore(storage,'test.maps');
+  const saved=store.save(createWorkshopMap({name:'Arena'}));assert.equal(store.list().length,1);assert.equal(store.get(saved.id).name,'Arena');
+  store.remove(saved.id);assert.equal(store.list().length,0);
 });
 
 test('передовые точки ботов свободны и дают врага у каждой базы',()=>{

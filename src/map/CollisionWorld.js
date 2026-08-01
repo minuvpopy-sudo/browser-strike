@@ -3,7 +3,8 @@ import * as THREE from 'three';
 export class CollisionWorld {
   constructor(config) {
     this.boxes = [...config.walls, ...config.crates].map((o) => ({ minX:o.x-o.w/2,maxX:o.x+o.w/2,minZ:o.z-o.d/2,maxZ:o.z+o.d/2,minY:o.y-o.h/2,maxY:o.y+o.h/2,material:o.material||'wood' }));
-    const scale=config.scale||1;this.bounds = { minX:-61.5*scale,maxX:61.5*scale,minZ:-55.5*scale,maxZ:55.5*scale };
+    const fallbackScale=config.scale||1;const width=config.size?.width??123*fallbackScale,depth=config.size?.depth??122*fallbackScale;
+    const margin=Math.min(2.5,Math.max(.8,Math.min(width,depth)*.02));this.bounds = { minX:-width/2+margin,maxX:width/2-margin,minZ:-depth/2+margin,maxZ:depth/2-margin };
   }
   moveCircle(position, delta, radius = .55) {
     let x = THREE.MathUtils.clamp(position.x, this.bounds.minX + radius, this.bounds.maxX - radius);
