@@ -31,6 +31,18 @@ const roundedBoxGeometry = ([width, height, depth], radius = .045) => {
   return geometry;
 };
 
+const createAwpDecalTexture = () => {
+  if (typeof document === 'undefined') return null;
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=192;const context=canvas.getContext('2d');
+  context.clearRect(0,0,canvas.width,canvas.height);context.lineJoin='round';context.lineCap='round';
+  context.beginPath();context.moveTo(18,124);context.bezierCurveTo(88,80,120,18,205,34);context.bezierCurveTo(172,64,165,85,156,116);context.bezierCurveTo(235,69,298,51,389,58);context.bezierCurveTo(334,83,298,109,265,154);context.bezierCurveTo(204,120,151,129,83,169);context.closePath();context.fillStyle='#f26a19';context.fill();context.strokeStyle='#351811';context.lineWidth=16;context.stroke();
+  context.beginPath();context.moveTo(70,136);context.bezierCurveTo(141,100,177,63,231,58);context.bezierCurveTo(204,88,214,105,196,132);context.bezierCurveTo(248,102,303,86,356,86);context.bezierCurveTo(300,112,275,136,252,164);context.bezierCurveTo(189,134,139,146,99,174);context.closePath();context.fillStyle='#b8321d';context.fill();
+  context.beginPath();context.moveTo(205,38);context.quadraticCurveTo(238,10,265,37);context.quadraticCurveTo(239,39,224,58);context.closePath();context.fillStyle='#20251d';context.fill();
+  context.strokeStyle='#f6a431';context.lineWidth=8;for(const [x,y,length,angle] of [[283,72,92,-.22],[318,96,105,.02],[143,86,76,-.55]]){context.beginPath();context.moveTo(x,y);context.lineTo(x+Math.cos(angle)*length,y+Math.sin(angle)*length);context.stroke();}
+  context.fillStyle='#24271f';context.beginPath();context.arc(226,64,13,0,Math.PI*2);context.fill();context.fillStyle='#f3d66d';context.beginPath();context.arc(231,61,4,0,Math.PI*2);context.fill();
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;return texture;
+};
+
 export class WeaponManager extends EventTarget {
   constructor(camera, player, input, audio, skinManager) {
     super();
@@ -353,11 +365,17 @@ export class WeaponManager extends EventTarget {
 
   buildGun(definition) {
     const skin = this.skinManager.weapon(definition.id);
-    const metal = new THREE.MeshStandardMaterial({ color: skin.colors[0], metalness: .58, roughness: .4 });
-    const dark = new THREE.MeshStandardMaterial({ color: skin.colors[1], metalness: .2, roughness: .7 });
+    const referenceAwp=definition.id==='awp';
+    const metal = new THREE.MeshStandardMaterial({ color: referenceAwp?0xe3e9b8:skin.colors[0], metalness: referenceAwp?.18:.58, roughness: referenceAwp?.56:.4 });
+    const dark = new THREE.MeshStandardMaterial({ color: referenceAwp?0x23271f:skin.colors[1], metalness: .2, roughness: .7 });
     const wood = new THREE.MeshStandardMaterial({ color: definition.id === 'ak47' ? 0x75451f : skin.colors[1], metalness: .04, roughness: .78 });
     const detail = new THREE.MeshStandardMaterial({ color: 0x111412, metalness: .42, roughness: .54 });
     const glass = new THREE.MeshStandardMaterial({ color: 0x426b72, metalness: .18, roughness: .16, emissive: 0x071315 });
+    const awpMint=referenceAwp?new THREE.MeshStandardMaterial({color:0xc8dba8,metalness:.12,roughness:.6}):metal;
+    const awpOrange=referenceAwp?new THREE.MeshStandardMaterial({color:0xf06a1b,metalness:.25,roughness:.46}):metal;
+    const awpRed=referenceAwp?new THREE.MeshStandardMaterial({color:0xa52d20,metalness:.2,roughness:.52}):metal;
+    const awpScope=referenceAwp?new THREE.MeshStandardMaterial({color:0x252b22,metalness:.55,roughness:.32}):detail;
+    const awpGlass=referenceAwp?new THREE.MeshStandardMaterial({color:0x688875,metalness:.16,roughness:.1,emissive:0x173126,emissiveIntensity:.45}):glass;
     const long = ['rifles', 'machineguns'].includes(definition.category);
     const smg = definition.category === 'smgs';
     const shotgun = definition.category === 'shotguns';
@@ -478,13 +496,26 @@ export class WeaponManager extends EventTarget {
         addCylinder('sg552-gas-system',[.032,.032],.57,[0,.2,-.98],detail);
       } else if (definition.id === 'scout' || definition.id === 'awp') {
         const awp=definition.id==='awp';
-        addBox(`${definition.id}-stock`,[awp ? .39 : .34,awp ? .34 : .29,.7],[0,-.01,.42],awp?dark:wood,[-.07,0,0],.1);
-        addBox(`${definition.id}-cheek-rest`,[.3,.12,.42],[0,.23,.36],dark,[0,0,0],.055);
-        addBox(`${definition.id}-handguard`,[awp ? .36 : .3,awp ? .25 : .2,.68],[0,.01,-1.0],awp?dark:wood,[0,0,0],.075);
+        addBox(`${definition.id}-stock`,[awp ? .43 : .34,awp ? .37 : .29,awp ? .78 : .7],[0,-.01,awp?.45:.42],awp?metal:wood,[-.07,0,0],.11);
+        addBox(`${definition.id}-cheek-rest`,[awp?.34:.3,.12,awp?.48:.42],[0,.23,.37],awp?awpMint:dark,[0,0,0],.055);
+        addBox(`${definition.id}-handguard`,[awp ? .39 : .3,awp ? .27 : .2,awp ? .78 : .68],[0,.01,awp?-1.03:-1.0],awp?awpMint:wood,[0,0,0],.08);
         addBox(`${definition.id}-magazine`,[awp ? .24 : .19,awp ? .38 : .3,.24],[0,-.32,-.35],detail,[-.08,0,0],.05);
         addCylinder(`${definition.id}-bolt`,[.025,.025],.2,[.2,.16,-.25],metal,[0,0,Math.PI/2],12);
-        const boltKnob=new THREE.Mesh(new THREE.SphereGeometry(.055,12,8),detail);boltKnob.name=`${definition.id}-bolt-knob`;boltKnob.position.set(.3,.16,-.25);this.group.add(boltKnob);
-        if(awp)addCylinder('awp-heavy-barrel',[.055,.065],.78,[0,.055,-1.57],detail,[Math.PI/2,0,0],20);
+        const boltKnob=new THREE.Mesh(new THREE.SphereGeometry(awp?.065:.055,12,8),awp?awpOrange:detail);boltKnob.name=`${definition.id}-bolt-knob`;boltKnob.position.set(.3,.16,-.25);this.group.add(boltKnob);
+        if(awp){
+          addBox('awp-buttpad',[.45,.4,.105],[0,-.035,.86],detail,[-.07,0,0],.04);
+          addBox('awp-stock-accent',[.445,.075,.38],[0,.12,.55],awpOrange,[-.07,0,0],.025);
+          addBox('awp-receiver-spine',[.31,.075,.72],[0,.225,-.45],awpMint,[0,0,0],.025);
+          addBox('awp-fore-end-accent',[.395,.055,.38],[0,.15,-1.13],awpOrange,[0,0,0],.018);
+          addCylinder('awp-heavy-barrel',[.058,.07],.92,[0,.055,-1.67],awpScope,[Math.PI/2,0,0],24);
+          addCylinder('awp-muzzle-ring',[.077,.077],.075,[0,.055,-2.14],awpOrange,[Math.PI/2,0,0],24);
+          addCylinder('awp-muzzle-brake',[.065,.052],.18,[0,.055,-2.25],detail,[Math.PI/2,0,0],24);
+          for(const side of [-1,1]){
+            const texture=createAwpDecalTexture();const decalMaterial=new THREE.MeshBasicMaterial({color:texture?0xffffff:0xf06a1b,map:texture,transparent:Boolean(texture),side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});
+            const decal=new THREE.Mesh(new THREE.PlaneGeometry(.78,.22),decalMaterial);decal.name=`awp-skin-decal-${side>0?'right':'left'}`;decal.rotation.y=side>0?Math.PI/2:-Math.PI/2;decal.position.set(side*.157,.025,-.45);this.group.add(decal);
+          }
+          for(const side of [-1,1]){addBox(`awp-orange-slash-${side}`,[.018,.055,.34],[side*.198,.09,-.94],awpRed,[.55,0,0],.008);addCylinder(`awp-emblem-${side}`,[.055,.055],.014,[side*.201,.055,-.25],awpOrange,[0,0,Math.PI/2],18);}
+        }
       } else if (definition.id === 'g3sg1' || definition.id === 'sg550') {
         const g3=definition.id==='g3sg1';
         addBox(`${definition.id}-marksman-stock`,[.36,.34,.68],[0,-.01,.42],g3?wood:dark,[-.065,0,0],.09);
@@ -510,13 +541,14 @@ export class WeaponManager extends EventTarget {
       }
 
       if (definition.scope) {
-        const scopeLength=['awp','scout','g3sg1','sg550'].includes(definition.id) ? .55 : .43;
-        addCylinder('scope', [.087, .095], scopeLength, [0, .33, -bodyLength * .45], detail, [Math.PI / 2, 0, 0], 20);
-        addCylinder('scope-front', [.125, .105], .14, [0, .33, -bodyLength * .45-scopeLength*.43], detail, [Math.PI / 2, 0, 0], 20);
-        addCylinder('scope-rear', [.115, .1], .12, [0, .33, -bodyLength * .45+scopeLength*.45], detail, [Math.PI / 2, 0, 0], 20);
-        addCylinder('scope-lens', [.096, .096], .012, [0, .33, -bodyLength * .45-scopeLength*.51], glass, [Math.PI / 2, 0, 0], 20);
-        addBox('scope-mount-front', [.12, .13, .09], [0, .21, -bodyLength * .58], dark,[0,0,0],.025);
-        addBox('scope-mount-rear', [.12, .13, .09], [0, .21, -bodyLength * .32], dark,[0,0,0],.025);
+        const scopeLength=definition.id==='awp'?.72:['scout','g3sg1','sg550'].includes(definition.id)?.55:.43;const scopeMaterial=definition.id==='awp'?awpScope:detail;const lensMaterial=definition.id==='awp'?awpGlass:glass;
+        addCylinder('scope', [definition.id==='awp'?.1:.087, definition.id==='awp'?.108:.095], scopeLength, [0, definition.id==='awp'?.36:.33, -bodyLength * .45], scopeMaterial, [Math.PI / 2, 0, 0], 24);
+        addCylinder('scope-front', [definition.id==='awp'?.15:.125, definition.id==='awp'?.12:.105], definition.id==='awp'?.19:.14, [0, definition.id==='awp'?.36:.33, -bodyLength * .45-scopeLength*.43], scopeMaterial, [Math.PI / 2, 0, 0], 24);
+        addCylinder('scope-rear', [definition.id==='awp'?.13:.115, definition.id==='awp'?.11:.1], definition.id==='awp'?.15:.12, [0, definition.id==='awp'?.36:.33, -bodyLength * .45+scopeLength*.45], scopeMaterial, [Math.PI / 2, 0, 0], 24);
+        addCylinder('scope-lens', [definition.id==='awp'?.122:.096, definition.id==='awp'?.122:.096], .012, [0, definition.id==='awp'?.36:.33, -bodyLength * .45-scopeLength*.55], lensMaterial, [Math.PI / 2, 0, 0], 24);
+        addBox('scope-mount-front', [.12, .15, .09], [0, .225, -bodyLength * .62], dark,[0,0,0],.025);
+        addBox('scope-mount-rear', [.12, .15, .09], [0, .225, -bodyLength * .28], dark,[0,0,0],.025);
+        if(definition.id==='awp'){addCylinder('awp-scope-orange-ring-front',[.123,.123],.04,[0,.36,-bodyLength*.45-scopeLength*.25],awpOrange,[Math.PI/2,0,0],24);addCylinder('awp-scope-orange-ring-rear',[.116,.116],.035,[0,.36,-bodyLength*.45+scopeLength*.31],awpRed,[Math.PI/2,0,0],24);}
       } else {
         addBox('rear-sight', [.11, .08, .08], [0, .26, -.18], detail);
         addBox('front-sight', [.07, .11, .07], [0, .22, -bodyLength - barrelLength * .7], detail);
@@ -524,15 +556,15 @@ export class WeaponManager extends EventTarget {
     }
 
     const muzzle = new THREE.PointLight(0xffc16b, 0, 3);
-    muzzle.position.set(0, .04, -bodyLength - barrelLength);
+    muzzle.position.set(0, .04, referenceAwp?-2.36:-bodyLength-barrelLength);
     muzzle.name = 'muzzle';
     this.group.add(muzzle);
 
-    const baseRotation = new THREE.Euler(-.09, .04, .025, 'YXZ');
+    const baseRotation = new THREE.Euler(referenceAwp?-.065:-.09, referenceAwp?.055:.04, referenceAwp?.035:.025, 'YXZ');
     this.group.userData.baseRotation = baseRotation;
     this.group.rotation.copy(baseRotation);
-    this.group.position.set(.36, -.32, -.68);
-    this.group.scale.setScalar(long ? .72 : pistol ? .86 : .78);
+    this.group.position.set(referenceAwp?.38:.36, referenceAwp?-.3:-.32, referenceAwp?-.58:-.68);
+    this.group.scale.setScalar(referenceAwp?.79:long ? .72 : pistol ? .86 : .78);
   }
 
   buildKnife(knife) {

@@ -366,6 +366,13 @@ test('основные винтовки имеют отдельные класс
   assert.equal(WEAPONS.m4a1.name,'M4A4');assert.ok(m4Manager.group.getObjectByName('m4-stock'));assert.ok(m4Manager.group.getObjectByName('m4-handguard'));assert.ok(m4Manager.group.getObjectByName('m4-carry-handle'));assert.ok(m4Manager.group.getObjectByName('m4-magazine'));
 });
 
+test('AWP имеет светлый авторский скин, крупную оптику и детали референса',()=>{
+  const skinManager={weapon:()=>({colors:[0x111111,0x222222]})};const manager=new WeaponManager(new THREE.Group(),{alive:true,velocity:new THREE.Vector3(),inventory:{active:new Firearm(WEAPONS.awp)}},{},{},skinManager);
+  assert.equal(manager.group.getObjectByName('receiver').material.color.getHex(),0xe3e9b8);assert.ok(manager.group.getObjectByName('awp-stock-accent'));assert.ok(manager.group.getObjectByName('awp-buttpad'));
+  assert.ok(manager.group.getObjectByName('awp-skin-decal-right'));assert.ok(manager.group.getObjectByName('awp-skin-decal-left'));assert.ok(manager.group.getObjectByName('awp-scope-orange-ring-front'));
+  assert.equal(manager.group.getObjectByName('scope-lens').material.color.getHex(),0x688875);assert.ok(manager.group.getObjectByName('scope-front').geometry.parameters.radiusTop>=.14);assert.ok(manager.group.getObjectByName('muzzle').position.z<-2.3);assert.ok(manager.group.scale.x>.75);
+});
+
 test('все винтовки имеют сглаженные корпуса и свои узнаваемые детали',()=>{
   const skinManager={weapon:()=>({colors:[0x343a34,0x151816]})};
   const markers={ak47:'wood-stock',m4a1:'m4-stock',galil:'galil-stock',famas:'famas-bullpup-stock',scout:'scout-bolt',awp:'awp-heavy-barrel',sg552:'sg552-stock',aug:'aug-bullpup-body',g3sg1:'g3sg1-marksman-stock',sg550:'sg550-marksman-stock'};
