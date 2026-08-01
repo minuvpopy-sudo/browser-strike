@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MAP_MATERIALS, WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../map/WorkshopMap.js';
+import { MAP_MATERIALS, WORKSHOP_IMPORT_MAX_BYTES, WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../map/WorkshopMap.js';
 import { MATERIAL_ATLAS_CELLS, MATERIAL_ATLAS_URL, createAtlasMaterials } from '../map/MaterialLibrary.js';
 
 export class MapWorkshop extends EventTarget {
@@ -185,8 +185,9 @@ export class MapWorkshop extends EventTarget {
   }
 
   async importFile(file) {
-    if (!file) return;if (file.size > 2_000_000) return this.setStatus('Файл карты слишком большой', 'error');
-    try { const map = this.store.save(parseWorkshopMap(await file.text()));this.edit(map);this.renderLibrary();this.setStatus(`Карта «${map.name}» импортирована`, 'success'); }
+    if (!file) return;if (file.size > WORKSHOP_IMPORT_MAX_BYTES) return this.setStatus(`Файл карты больше ${Math.round(WORKSHOP_IMPORT_MAX_BYTES/1024/1024)} МБ`, 'error');
+    this.setStatus(`Импорт ${Math.max(1,Math.round(file.size/1024))} КБ…`);
+    try { const text=await file.text();const map = this.store.save(parseWorkshopMap(text));this.edit(map);this.renderLibrary();this.setStatus(`Карта «${map.name}» импортирована, текстуры стен сохранены`, 'success'); }
     catch (error) { this.setStatus(error.message || 'Не удалось импортировать карту', 'error'); }
     finally { this.elements.importFile.value = ''; }
   }

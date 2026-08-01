@@ -1,6 +1,7 @@
 export const WORKSHOP_MAP_FORMAT = 'browser-strike-map';
 export const WORKSHOP_MAP_VERSION = 2;
 export const WORKSHOP_MAP_MAX_SIZE = 480;
+export const WORKSHOP_IMPORT_MAX_BYTES = 20 * 1024 * 1024;
 export const MAP_MATERIALS = Object.freeze({
   sandstone: 'Песчаник', brick: 'Кирпич', concrete: 'Бетон', metal: 'Металл',
   wood: 'Дерево', tech: 'Техно-панель', grass: 'Мятные блоки', ice: 'Светлая плитка',
@@ -23,7 +24,8 @@ function sanitizePoint(point, size, fallback) {
 
 function sanitizeObject(object, index, size) {
   const type = ['wall', 'crate', 'ramp'].includes(object?.type) ? object.type : 'wall';
-  const material = MAP_MATERIALS[object?.material] ? object.material : type === 'crate' ? 'wood' : type === 'ramp' ? 'concrete' : 'sandstone';
+  const requestedMaterial=object?.material||object?.texture||object?.textureId;
+  const material = MAP_MATERIALS[requestedMaterial] ? requestedMaterial : type === 'crate' ? 'wood' : type === 'ramp' ? 'concrete' : 'sandstone';
   const maxWidth = Math.max(2, size.width - 4), maxDepth = Math.max(2, size.depth - 4);
   const w = clamp(object?.w, .8, Math.min(120, maxWidth), type === 'crate' ? 3 : type === 'ramp' ? 7 : 8);
   const d = clamp(object?.d, .8, Math.min(120, maxDepth), type === 'crate' ? 3 : type === 'ramp' ? 14 : 2);

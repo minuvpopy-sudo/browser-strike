@@ -31,7 +31,7 @@ import { selectSpectatorTarget, takeOverBotState } from '../src/core/SpectatorMo
 import { SHOT_PROFILES, SHOT_SAMPLES, shotProfile, spatialShotMix } from '../src/core/AudioManager.js';
 import { cleanPlayerName, createRoomCode, normalizeRoomCode, roomPeerId } from '../src/network/OnlineSession.js';
 import { RemotePlayer } from '../src/network/RemotePlayer.js';
-import { WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../src/map/WorkshopMap.js';
+import { WORKSHOP_IMPORT_MAX_BYTES, WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../src/map/WorkshopMap.js';
 import { MATERIAL_ATLAS_CELLS } from '../src/map/MaterialLibrary.js';
 import { MapWorkshop } from '../src/ui/MapWorkshop.js';
 import { MAIN_SAND_TEXTURE_URL } from '../src/map/DustInspiredMap.js';
@@ -158,9 +158,9 @@ test('размер большой карты ограничен 480 и не со
 
 test('файл мастерской безопасно проверяется, экспортируется и импортируется',()=>{
   const source=createWorkshopMap({name:'<b>Очень длинная пользовательская карта</b>'});
-  source.objects.push({id:'huge',type:'crate',x:999,z:-999,w:999,d:999,h:999,material:'unknown'});
+  source.objects.push({id:'huge',type:'crate',x:999,z:-999,w:999,d:999,h:999,material:'unknown'},{id:'textured-wall',type:'wall',x:0,z:0,w:8,d:2,h:5,texture:'redBand'});
   const clean=sanitizeWorkshopMap(source);const imported=parseWorkshopMap(serializeWorkshopMap(clean));const object=imported.objects.at(-1);
-  assert.equal(imported.format,'browser-strike-map');assert.equal(imported.name.includes('<'),false);assert.ok(object.w<=120);assert.ok(object.h<=40);assert.equal(object.material,'wood');
+  assert.equal(imported.format,'browser-strike-map');assert.equal(imported.name.includes('<'),false);assert.equal(imported.objects.find((item)=>item.id==='huge').material,'wood');assert.equal(object.material,'redBand');assert.ok(WORKSHOP_IMPORT_MAX_BYTES>=10_000_000);
   assert.throws(()=>parseWorkshopMap('{"format":"other"}'),/мастерской/);
 });
 
