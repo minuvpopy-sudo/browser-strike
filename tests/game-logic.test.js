@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { COMBAT, ECONOMY, awardMoney, lossReward, canBuy, hitDamage } from '../src/config/MatchRules.js';
-import { WEAPONS } from '../src/weapons/WeaponDefinitions.js';
+import { WEAPONS, GRENADES } from '../src/weapons/WeaponDefinitions.js';
 import { Firearm } from '../src/weapons/Firearm.js';
 import { NavigationGraph } from '../src/map/NavigationGraph.js';
 import { MAP_CONFIG } from '../src/map/MapConfig.js';
@@ -28,7 +28,7 @@ import { PlayerInventory } from '../src/player/PlayerInventory.js';
 import { PlayerMovement } from '../src/player/PlayerMovement.js';
 import { AutoUpdater, versionedPageUrl } from '../src/core/AutoUpdater.js';
 import { selectSpectatorTarget, takeOverBotState } from '../src/core/SpectatorMode.js';
-import { SHOT_PROFILES, SHOT_SAMPLES, shotProfile } from '../src/core/AudioManager.js';
+import { SHOT_PROFILES, SHOT_SAMPLES, shotProfile, spatialShotMix } from '../src/core/AudioManager.js';
 import { cleanPlayerName, createRoomCode, normalizeRoomCode, roomPeerId } from '../src/network/OnlineSession.js';
 import { RemotePlayer } from '../src/network/RemotePlayer.js';
 
@@ -64,6 +64,23 @@ test('таймер раунда завершает раунд и запуска�
 
 test('набор оружия содержит все основные категории',()=>{
   const categories=new Set(Object.values(WEAPONS).map(w=>w.category));for(const expected of ['pistols','shotguns','smgs','rifles','machineguns','knives'])assert.ok(categories.has(expected));assert.equal(Object.keys(WEAPONS).length,25);
+});
+
+test('четыре типа гранат выбираются, показываются в руке и расходуются по одной',()=>{
+  assert.deepEqual(Object.keys(GRENADES).sort(),['decoy','flash','he','smoke']);
+  const inventory=new PlayerInventory('attackers',{type:'standard',skin:'classic'});
+  assert.equal(inventory.addGrenade('he'),true);assert.equal(inventory.addGrenade('he'),false);
+  assert.equal(inventory.addGrenade('flash'),true);assert.equal(inventory.addGrenade('smoke'),true);assert.equal(inventory.addGrenade('decoy'),true);
+  assert.equal(inventory.selectGrenade(),true);assert.equal(inventory.active.definition.id,'he');
+  const player={alive:true,velocity:new THREE.Vector3(),inventory};const manager=new WeaponManager(new THREE.Group(),player,{}, {},{});
+  assert.ok(manager.group.getObjectByName('held-grenade'));
+  inventory.selectGrenade();manager.update(0);assert.equal(inventory.active.definition.id,'flash');
+  assert.equal(inventory.consumeGrenade(),'flash');assert.equal(inventory.slots.grenades.length,3);
+});
+
+test('чужой выстрел тише вдали и слышен со стороны стрелка',()=>{
+  const listener={x:0,y:0,z:0};const near=spatialShotMix({x:4,y:0,z:0},listener,0);const far=spatialShotMix({x:70,y:0,z:0},listener,0);const left=spatialShotMix({x:-5,y:0,z:0},listener,0);
+  assert.ok(near.gainScale>far.gainScale);assert.ok(near.pan>.9);assert.ok(left.pan<-.9);
 });
 
 test('пистолет направлен стволом вперёд по оси камеры',()=>{

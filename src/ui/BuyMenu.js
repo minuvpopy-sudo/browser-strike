@@ -82,7 +82,9 @@ export class BuyMenu extends EventTarget {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = `buy-item${allowed ? '' : ' disabled'}`;
-      button.innerHTML = `<strong>${item.name}</strong><small>${item.damage ? `Урон ${item.damage} · Магазин ${item.mag}` : item.category === 'grenades' ? 'Одноразовое снаряжение' : 'Защита и боезапас'}</small><span class="price">$${item.cost}</span>${!available ? '<small>Недоступно стороне</small>' : this.context.player.money < item.cost ? '<small>Недостаточно денег</small>' : ''}`;
+      const grenadeDetails={he:'Урон по площади',flash:'Ослепляет игроков и ботов',smoke:'Создаёт плотную дымовую завесу',decoy:'Имитирует очередь выстрелов'};
+      const details=item.category==='grenades'?(grenadeDetails[item.id]||'Одноразовое снаряжение'):item.damage?`Урон ${item.damage} · Магазин ${item.mag}`:'Защита и боезапас';
+      button.innerHTML = `<strong>${item.name}</strong><small>${details}</small><span class="price">$${item.cost}</span>${!available ? '<small>Недоступно стороне</small>' : this.context.player.money < item.cost ? '<small>Недостаточно денег</small>' : ''}`;
       button.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return;
         event.preventDefault();

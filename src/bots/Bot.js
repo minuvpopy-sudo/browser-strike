@@ -10,7 +10,7 @@ export class Bot {
     this.kills = 0; this.deaths = 0; this.assists = 0; this.state = 'spawn';
     this.weapon = WEAPONS[team === 'attackers' ? 'glock' : 'usp'];
     this.ammo = this.weapon.mag; this.reserve = this.weapon.reserve; this.reloadTime = 0;
-    this.hasBomb = false; this.defuseKit = false; this.lastSeen = null; this.flashTime = 0;
+    this.hasBomb = false; this.defuseKit = false; this.lastSeen = null; this.flashTime = 0; this.blindedTime = 0;
     this.group = this.createModel(); scene.add(this.group);
   }
 
@@ -39,7 +39,7 @@ export class Bot {
     this.position.set(point.x, 0, point.z); this.group.position.copy(this.position); this.group.visible = true;
     this.health = this.maxHealth; this.armor = 0; this.helmet = false; this.alive = true; this.state = 'buy'; this.hasBomb = false; this.bombSite = null; this.defuseKit = false;
     this.weapon = WEAPONS[this.team === 'attackers' ? 'glock' : 'usp'];
-    this.reloadTime = 0; this.flashTime = 0; this.ammo = this.weapon.mag; this.reserve = this.weapon.reserve; this.lastSeen = null; this.lastAttacker = null; this.spawnProtectedUntil = performance.now() + 2500;
+    this.reloadTime = 0; this.flashTime = 0; this.blindedTime = 0; this.ammo = this.weapon.mag; this.reserve = this.weapon.reserve; this.lastSeen = null; this.lastAttacker = null; this.spawnProtectedUntil = performance.now() + 2500;
     this.buy();
   }
 

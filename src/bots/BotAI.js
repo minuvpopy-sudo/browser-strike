@@ -27,6 +27,11 @@ export class BotAI {
 
   update(dt, enemies, objective, smoke, onKill) {
     if (!this.bot.alive) return;
+    if (this.bot.blindedTime > 0) {
+      this.bot.blindedTime = Math.max(0, this.bot.blindedTime - dt);
+      this.bot.state = 'flashed'; this.bot.velocity.multiplyScalar(Math.max(0, 1 - dt * 8));
+      this.combat.update(dt, null, false, onKill); return;
+    }
     if (this.bot.state === 'buy') this.bot.buy();
     this.thinkTimer -= dt;
     this.memoryTimer = Math.max(0, this.memoryTimer - dt);

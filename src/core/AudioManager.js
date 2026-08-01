@@ -1,3 +1,13 @@
+export function spatialShotMix(source, listener, yaw = 0) {
+  const dx = Number(source?.x || 0) - Number(listener?.x || 0);
+  const dy = Number(source?.y || 0) - Number(listener?.y || 0);
+  const dz = Number(source?.z || 0) - Number(listener?.z || 0);
+  const distance = Math.hypot(dx, dy, dz);
+  const horizontal = Math.max(.001, Math.hypot(dx, dz));
+  const pan = Math.max(-1, Math.min(1, (dx * Math.cos(yaw) + dz * Math.sin(yaw)) / horizontal));
+  return { gainScale: Math.max(.035, Math.min(1, 1 / (1 + distance * .055))), pan, distance };
+}
+
 export const SHOT_PROFILES = Object.freeze({
   glock: Object.freeze({
     crack: Object.freeze({ duration: .052, gain: .56, highpass: 520, lowpass: 7200, decay: 96 }),
@@ -21,7 +31,7 @@ export function shotProfile(weapon) {
 }
 
 export class AudioManager {
-  constructor(settings) { this.settings = settings; this.context = null; this.master = null; this.unlocked = false; this.samples = new Map(); this.samplePromises = new Map(); }
+  constructor(settings) { this.settings = settings; this.context = null; this.master = null; this.unlocked = false; this.samples = new Map(); this.samplePromises = new Map(); this.listenerPosition = { x: 0, y: 0, z: 0 }; this.listenerYaw = 0; }
   unlock() {
     if (!this.context) {
       this.context = new (window.AudioContext || window.webkitAudioContext)();
@@ -65,18 +75,36 @@ export class AudioManager {
     filter.type = 'bandpass'; filter.frequency.value = frequency; gain.gain.setValueAtTime(gainValue, this.context.currentTime); gain.gain.exponentialRampToValueAtTime(.0001, this.context.currentTime + duration);
     source.buffer = buffer; source.connect(filter).connect(gain).connect(this.master); source.start();
   }
-  shot(power = 1, weapon = null) {
+  setListener(position, yaw = 0) {
+    if (position) this.listenerPosition = { x: Number(position.x) || 0, y: Number(position.y) || 0, z: Number(position.z) || 0 };
+    this.listenerYaw = Number(yaw) || 0;
+  }
+  shotAt(position, weapon = null, power = 1) {
+    const mix = spatialShotMix(position, this.listenerPosition, this.listenerYaw);
+    this.shot(power, weapon, mix);
+  }
+  shotDestination({ gainScale = 1, pan = 0 } = {}) {
+    const gain = this.context.createGain();
+    gain.gain.value = Math.max(.01, Math.min(1, Number(gainScale) || 1));
+    if (typeof this.context.createStereoPanner === 'function') {
+      const panner = this.context.createStereoPanner();panner.pan.value = Math.max(-1, Math.min(1, Number(pan) || 0));
+      gain.connect(panner).connect(this.master);
+    } else gain.connect(this.master);
+    return gain;
+  }
+  shot(power = 1, weapon = null, spatial = {}) {
     if (!this.unlocked || !this.context) return;
+    const destination = this.shotDestination(spatial);
     const id = typeof weapon === 'string' ? weapon : weapon?.id;
     const sample = SHOT_SAMPLES[id];
     const sampleBuffer = this.samples.get(id);
     if (sample && sampleBuffer) {
-      this.sampledShot(sampleBuffer, sample, power);
+      this.sampledShot(sampleBuffer, sample, power, destination);
       return;
     }
     const profile = shotProfile(weapon);
     if (profile) {
-      this.profiledShot(profile, power);
+      this.profiledShot(profile, power, destination);
       return;
     }
     const now = this.context.currentTime;
@@ -106,11 +134,11 @@ export class AudioManager {
     crackGain.gain.setValueAtTime(.18 * strength * volume, now);
     crackGain.gain.exponentialRampToValueAtTime(.0001, now + duration);
     crack.buffer = buffer;
-    crack.connect(highpass).connect(lowpass).connect(crackGain).connect(this.master);
+    crack.connect(highpass).connect(lowpass).connect(crackGain).connect(destination);
     crack.start(now);
     crack.stop(now + duration);
   }
-  sampledShot(buffer, sample, power = 1) {
+  sampledShot(buffer, sample, power = 1, destination = this.master) {
     const now = this.context.currentTime;
     const volume = (this.settings.values.shotsVolume ?? 80) / 100;
     const strength = Math.max(.65, Math.min(1.35, power));
@@ -124,9 +152,9 @@ export class AudioManager {
     gain.gain.setValueAtTime(sample.gain * volume * strength, now + Math.max(.01, duration - .09));
     gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
     compressor.threshold.setValueAtTime(-14, now);compressor.knee.setValueAtTime(10, now);compressor.ratio.setValueAtTime(5, now);compressor.attack.setValueAtTime(.001, now);compressor.release.setValueAtTime(.1, now);
-    source.connect(gain).connect(compressor).connect(this.master);source.start(now, offset, duration);source.stop(now + duration + .02);
+    source.connect(gain).connect(compressor).connect(destination);source.start(now, offset, duration);source.stop(now + duration + .02);
   }
-  profiledShot(profile, power = 1) {
+  profiledShot(profile, power = 1, destination = this.master) {
     const now = this.context.currentTime;
     const volume = (this.settings.values.shotsVolume ?? 80) / 100;
     const strength = Math.max(.65, Math.min(1.35, power));
@@ -139,7 +167,7 @@ export class AudioManager {
     compressor.ratio.setValueAtTime(7, now);
     compressor.attack.setValueAtTime(.001, now);
     compressor.release.setValueAtTime(.09, now);
-    bus.connect(compressor).connect(this.master);
+    bus.connect(compressor).connect(destination);
     this.noiseLayer(bus, profile.crack, now, variation);
     this.oscillatorLayer(bus, profile.body, now, variation);
     this.oscillatorLayer(bus, profile.slide, now, variation);

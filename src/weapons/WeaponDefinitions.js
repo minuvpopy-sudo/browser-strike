@@ -34,7 +34,10 @@ export const EQUIPMENT = Object.freeze({
 });
 
 export const GRENADES = Object.freeze({
-  he:{id:'he',name:'Осколочная граната',category:'grenades',cost:300,damage:95}, flash:{id:'flash',name:'Светошумовая граната',category:'grenades',cost:200}, smoke:{id:'smoke',name:'Дымовая граната',category:'grenades',cost:300}
+  he:{id:'he',name:'Осколочная граната',category:'grenades',cost:300,damage:105,fuse:1.8,maxCount:1},
+  flash:{id:'flash',name:'Светошумовая граната',category:'grenades',cost:200,fuse:1.65,maxCount:2},
+  smoke:{id:'smoke',name:'Дымовая граната',category:'grenades',cost:300,fuse:2.35,maxCount:1},
+  decoy:{id:'decoy',name:'Ложная граната',category:'grenades',cost:50,fuse:2,maxCount:1}
 });
 export const BUY_CATEGORIES = Object.freeze([
   ['pistols','Пистолеты'],['shotguns','Дробовики'],['smgs','Пистолеты-пулемёты'],['rifles','Винтовки'],['machineguns','Пулемёты'],['ammo','Боеприпасы'],['equipment','Экипировка'],['grenades','Гранаты']

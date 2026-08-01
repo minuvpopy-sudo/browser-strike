@@ -9,12 +9,20 @@ export class BombEquipment {
   update() {}
 }
 
+export class GrenadeEquipment {
+  constructor(inventory) { this.inventory = inventory; }
+  get definition() { return GRENADES[this.inventory.slots.grenades[0]] || null; }
+  update() {}
+}
+
 export class PlayerInventory {
-  constructor(team,knifeChoice){this.team=team;this.slots={primary:null,pistol:new Firearm(WEAPONS[team==='attackers'?'glock':'usp']),knife:new Knife(WEAPONS.knife,knifeChoice.type,knifeChoice.skin),grenades:[],bomb:null};this.activeSlot='pistol';this.previousSlot='knife';}
-  get active(){return this.slots[this.activeSlot];}
+  constructor(team,knifeChoice){this.team=team;this.slots={primary:null,pistol:new Firearm(WEAPONS[team==='attackers'?'glock':'usp']),knife:new Knife(WEAPONS.knife,knifeChoice.type,knifeChoice.skin),grenades:[],bomb:null};this.grenadeEquipment=new GrenadeEquipment(this);this.activeSlot='pistol';this.previousSlot='knife';}
+  get active(){return this.activeSlot==='grenades'?(this.slots.grenades.length?this.grenadeEquipment:null):this.slots[this.activeSlot];}
   equip(slot){if(!this.slots[slot]||(Array.isArray(this.slots[slot])&&this.slots[slot].length===0))return false;if(slot!==this.activeSlot){this.previousSlot=this.activeSlot;this.activeSlot=slot;return true;}return false;}
   equipDefinition(def){const weapon=new Firearm(def);if(def.category==='pistols')this.slots.pistol=weapon;else this.slots.primary=weapon;this.equip(def.category==='pistols'?'pistol':'primary');return weapon;}
-  addGrenade(id){if(!GRENADES[id]||this.slots.grenades.length>=4)return false;this.slots.grenades.push(id);return true;}
+  addGrenade(id){const definition=GRENADES[id];if(!definition||this.slots.grenades.length>=4||this.slots.grenades.filter(item=>item===id).length>=(definition.maxCount||1))return false;this.slots.grenades.push(id);return true;}
+  selectGrenade(){if(!this.slots.grenades.length)return false;if(this.activeSlot==='grenades'&&this.slots.grenades.length>1){this.slots.grenades.push(this.slots.grenades.shift());this.grenadeEquipment=new GrenadeEquipment(this);return true;}return this.equip('grenades');}
+  consumeGrenade(){if(!this.slots.grenades.length)return null;const id=this.slots.grenades.shift();if(this.slots.grenades.length)this.grenadeEquipment=new GrenadeEquipment(this);else if(this.activeSlot==='grenades')this.equipFallback('grenades');return id;}
   setBomb(owned) {
     this.slots.bomb = owned ? new BombEquipment() : null;
     if (!owned && this.activeSlot === 'bomb') this.equipFallback('bomb');

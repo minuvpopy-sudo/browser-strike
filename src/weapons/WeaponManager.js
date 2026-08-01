@@ -70,9 +70,10 @@ export class WeaponManager extends EventTarget {
     const moving = Math.hypot(this.player.velocity.x, this.player.velocity.z);
     this.sway += dt * (5 + moving);
     const holdingBomb = active?.definition?.id === 'bomb';
-    const baseX = active instanceof Knife ? 0.43 : holdingBomb ? .38 : 0.34;
-    const baseY = active instanceof Knife ? -0.4 : holdingBomb ? -.42 : -0.31;
-    const baseZ = active instanceof Knife ? -1.0 : holdingBomb ? -1.08 : -0.62;
+    const holdingGrenade = active?.definition?.category === 'grenades';
+    const baseX = active instanceof Knife ? 0.43 : holdingBomb ? .38 : holdingGrenade ? .4 : 0.34;
+    const baseY = active instanceof Knife ? -0.4 : holdingBomb ? -.42 : holdingGrenade ? -.43 : -0.31;
+    const baseZ = active instanceof Knife ? -1.0 : holdingBomb ? -1.08 : holdingGrenade ? -.95 : -0.62;
     this.group.position.x = baseX + Math.sin(this.sway) * Math.min(0.014, moving * 0.0022);
     this.group.position.y = baseY + Math.abs(Math.cos(this.sway)) * Math.min(0.012, moving * 0.002);
     this.group.position.z = THREE.MathUtils.lerp(this.group.position.z, baseZ, Math.min(1, dt * 16));
@@ -206,12 +207,18 @@ export class WeaponManager extends EventTarget {
     if (this.input.justPressed('primary')) this.player.inventory.equip('primary');
     if (this.input.justPressed('pistol')) this.player.inventory.equip('pistol');
     if (this.input.justPressed('knife')) this.player.inventory.equip('knife');
+    if (this.input.justPressed('grenades')) this.player.inventory.selectGrenade();
     if (this.input.justPressed('bomb')) this.player.inventory.equip('bomb');
     if (this.input.justPressed('lastWeapon')) this.player.inventory.quickSwap();
     const wheel = this.input.consumeWheel();
     if (wheel) this.player.inventory.cycle(wheel);
 
     const active = this.player.inventory.active;
+    if(active?.definition?.category==='grenades'){
+      const down=this.input.mouseButtons.has(0);
+      if(down&&!this.triggerDown)this.dispatchEvent(new CustomEvent('throwgrenade',{detail:{id:active.definition.id}}));
+      this.triggerDown=down;this.secondaryDown=this.input.mouseButtons.has(2);return;
+    }
     if (this.input.justPressed('reload') && active instanceof Firearm && active.reload()) {
       this.audio.reload();
       this.dispatch('reload');
@@ -281,6 +288,7 @@ export class WeaponManager extends EventTarget {
     if (!active) return;
     if (active instanceof Knife) this.buildKnife(active);
     else if (active.definition?.id === 'bomb') this.buildBomb();
+    else if (active.definition?.category === 'grenades') this.buildGrenade(active.definition);
     else this.buildGun(active.definition);
     this.waveMaterials = collectKnifeWaveMaterials(this.group);
     this.drawTime = active instanceof Knife ? (active.variant === 'karambit' ? 1.02 : .88) : .35;
@@ -315,6 +323,20 @@ export class WeaponManager extends EventTarget {
     this.group.rotation.copy(baseRotation);
     this.group.position.set(.38, -.42, -1.08);
     this.group.scale.setScalar(.9);
+  }
+
+  buildGrenade(definition) {
+    const colors={he:0x40513d,flash:0xc9cec5,smoke:0x68776b,decoy:0x3e4d58};
+    const accents={he:0xb56b34,flash:0xd9d27a,smoke:0x93a9a0,decoy:0x4aa3c7};
+    const bodyMaterial=new THREE.MeshStandardMaterial({color:colors[definition.id]||0x4b554b,metalness:.48,roughness:.52,flatShading:true});
+    const dark=new THREE.MeshStandardMaterial({color:0x20251f,metalness:.7,roughness:.34,flatShading:true});
+    const accent=new THREE.MeshStandardMaterial({color:accents[definition.id]||0xb2aa64,metalness:.35,roughness:.45});
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(.15,.17,.43,14,2),bodyMaterial);body.name='held-grenade';this.group.add(body);
+    const top=new THREE.Mesh(new THREE.CylinderGeometry(.09,.12,.1,12),dark);top.position.y=.26;this.group.add(top);
+    const lever=new THREE.Mesh(roundedBoxGeometry([.13,.055,.36],.018),dark);lever.position.set(.085,.24,.08);lever.rotation.x=.18;this.group.add(lever);
+    const band=new THREE.Mesh(new THREE.TorusGeometry(.155,.022,7,18),accent);band.rotation.x=Math.PI/2;band.position.y=.02;this.group.add(band);
+    const pin=new THREE.Mesh(new THREE.TorusGeometry(.085,.014,6,18),dark);pin.rotation.y=Math.PI/2;pin.position.set(-.14,.28,0);this.group.add(pin);
+    const baseRotation=new THREE.Euler(.32,-.18,.16,'YXZ');this.group.userData.baseRotation=baseRotation;this.group.rotation.copy(baseRotation);this.group.position.set(.4,-.43,-.95);this.group.scale.setScalar(1.05);
   }
 
   clearModel() {
