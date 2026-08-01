@@ -168,7 +168,7 @@ export class SkinPreview {
     this.waveMaterials = collectKnifeWaveMaterials(this.group);
   }
 
-  inspect() { this.inspectLeft = this.type === 'karambit' ? 2.6 : this.type === 'm9' ? 2.1 : 1.7; }
+  inspect() { this.inspectLeft = this.type === 'karambit' ? 2.6 : this.type === 'm9' ? 2.4 : 1.7; }
 
   animate(now) {
     if (!this.running) return;
@@ -179,7 +179,7 @@ export class SkinPreview {
     if (this.waveMaterials?.length) animateKnifeWaves(this.waveMaterials, now / 1000);
 
     if (this.inspectLeft > 0) {
-      const duration = this.type === 'karambit' ? 2.6 : this.type === 'm9' ? 2.1 : 1.7;
+      const duration = this.type === 'karambit' ? 2.6 : this.type === 'm9' ? 2.4 : 1.7;
       const progress = 1 - this.inspectLeft / duration;
       if (this.type === 'karambit') {
         const flourish = Math.sin(progress * Math.PI);
@@ -187,7 +187,7 @@ export class SkinPreview {
         this.group.rotation.y = -.34 + progress * Math.PI * 4;
         this.group.rotation.z = -.06 + Math.sin(progress * Math.PI * 2) * 1.15 * flourish;
       } else if (this.type === 'm9') {
-        const flourish=Math.sin(progress*Math.PI);this.group.rotation.x=.12+Math.sin(progress*Math.PI*2)*.28*flourish;this.group.rotation.y=-.28+progress*Math.PI*2+flourish*.45;this.group.rotation.z=-.04+Math.sin(progress*Math.PI*4)*.2*flourish;
+        const presentation=Math.sin(progress*Math.PI);const showSide=Math.sin(progress*Math.PI*2);this.group.rotation.x=.12-presentation*.16;this.group.rotation.y=-.28+presentation*.82;this.group.rotation.z=-.04+showSide*.1*presentation;
       } else {
         this.group.rotation.y = -.45 + progress * Math.PI * 2;
         this.group.rotation.z = -.12 + Math.sin(progress * Math.PI) * .35;

@@ -84,9 +84,9 @@ export class WeaponManager extends EventTarget {
     const holdingBomb = active?.definition?.id === 'bomb';
     const holdingGrenade = active?.definition?.category === 'grenades';
     const holdingAwp=active?.definition?.id==='awp';
-    const baseX = active instanceof Knife ? (active.variant === 'm9' ? .39 : .43) : holdingBomb ? .38 : holdingGrenade ? .4 : holdingAwp ? .3 : 0.34;
-    const baseY = active instanceof Knife ? (active.variant === 'm9' ? -.43 : -.4) : holdingBomb ? -.42 : holdingGrenade ? -.43 : holdingAwp ? -.36 : -0.31;
-    const baseZ = active instanceof Knife ? (active.variant === 'karambit' ? -1.18 : active.variant === 'm9' ? -1.08 : -1) : holdingBomb ? -1.08 : holdingGrenade ? -.95 : holdingAwp ? -.82 : -0.62;
+    const baseX = active instanceof Knife ? (active.variant === 'm9' ? .36 : .43) : holdingBomb ? .38 : holdingGrenade ? .4 : holdingAwp ? .3 : 0.34;
+    const baseY = active instanceof Knife ? (active.variant === 'm9' ? -.46 : -.4) : holdingBomb ? -.42 : holdingGrenade ? -.43 : holdingAwp ? -.36 : -0.31;
+    const baseZ = active instanceof Knife ? (active.variant === 'karambit' ? -1.18 : active.variant === 'm9' ? -1.34 : -1) : holdingBomb ? -1.08 : holdingGrenade ? -.95 : holdingAwp ? -.82 : -0.62;
     this.group.position.x = baseX + Math.sin(this.sway) * Math.min(0.014, moving * 0.0022);
     this.group.position.y = baseY + Math.abs(Math.cos(this.sway)) * Math.min(0.012, moving * 0.002);
     this.group.position.z = THREE.MathUtils.lerp(this.group.position.z, baseZ, Math.min(1, dt * 16));
@@ -140,6 +140,8 @@ export class WeaponManager extends EventTarget {
     let m9PivotX = 0;
     let m9PivotY = 0;
     let m9PivotZ = 0;
+    let offsetX = 0;
+    let offsetY = 0;
 
     if (this.drawTime > 0) {
       this.drawTime = Math.max(0, this.drawTime - dt);
@@ -153,12 +155,16 @@ export class WeaponManager extends EventTarget {
         rotY -= Math.sin(progress * Math.PI) * .18;
         thrust = (1 - eased) * .3;
       } else if (knife.variant === 'm9') {
-        m9PivotX = (1 - eased) * -1.3;
-        m9PivotY = (1 - eased) * Math.PI * 1.5;
-        m9PivotZ = (1 - eased) * -.72;
-        rotX += (1 - eased) * .62;
-        rotZ -= Math.sin(progress * Math.PI) * .3;
-        thrust = (1 - eased) * .28;
+        const hidden = 1 - eased;
+        m9PivotX = hidden * -.72;
+        m9PivotY = hidden * .32;
+        m9PivotZ = hidden * -.48;
+        rotX += hidden * .7;
+        rotY += hidden * .22;
+        rotZ -= hidden * 1.02;
+        offsetX = hidden * .22;
+        offsetY = hidden * -.3;
+        thrust = hidden * .36;
       } else {
         handleLeft = Math.PI * (1 - eased);
         handleRight = -Math.PI * (1 - eased);
@@ -185,13 +191,18 @@ export class WeaponManager extends EventTarget {
       rotZ += progress * Math.PI * 2 + catchPause * .18;
       thrust = -flourish * .22;
     } else if (knife.inspecting > 0 && knife.variant === 'm9') {
-      const progress = 1 - knife.inspecting / 2.1;
-      const flourish = Math.sin(progress * Math.PI);
+      const progress = 1 - knife.inspecting / 2.4;
+      const presentation = Math.sin(progress * Math.PI);
       const showSide = Math.sin(progress * Math.PI * 2);
-      m9PivotX = showSide * .45 * flourish;
-      m9PivotY = progress * Math.PI * 2 + flourish * .55;
-      m9PivotZ = -Math.sin(progress * Math.PI * 4) * .28 * flourish;
-      rotX -= flourish * .3;rotY += showSide * .24;rotZ += flourish * .42;thrust = -flourish * .2;
+      m9PivotX = showSide * .18 * presentation;
+      m9PivotY = presentation * .95;
+      m9PivotZ = -showSide * .12 * presentation;
+      rotX -= presentation * .2;
+      rotY += presentation * .18;
+      rotZ += showSide * .09;
+      offsetX = -presentation * .09;
+      offsetY = presentation * .07;
+      thrust = -presentation * .18;
     }
 
     if (this.knifeAction) {
@@ -212,8 +223,11 @@ export class WeaponManager extends EventTarget {
           thrust = arc * -.24;
         }
       } else if (knife.variant === 'm9') {
-        if (this.knifeAction.heavy) { rotX -= arc * .72;rotY -= arc * .62;rotZ += arc * .24;m9PivotX += arc * .35;thrust = arc * -.46; }
-        else { rotZ -= arc * 1.18;rotY += arc * .42;m9PivotY -= arc * .25;thrust = arc * -.2; }
+        if (this.knifeAction.heavy) {
+          rotX -= arc * .24;rotY -= arc * .2;rotZ += arc * .12;m9PivotX += arc * .12;offsetY -= arc * .05;thrust = arc * -.54;
+        } else {
+          rotZ -= arc * 1.02;rotY += arc * .38;m9PivotY -= arc * .12;offsetX -= arc * .08;thrust = arc * -.2;
+        }
       } else if (this.knifeAction.heavy) {
         rotX -= arc * .62;
         rotY -= arc * .5;
@@ -241,6 +255,8 @@ export class WeaponManager extends EventTarget {
     if (karambitPivot) karambitPivot.rotation.set(pivotX, pivotY, pivotZ, 'YXZ');
     if (m9Pivot) m9Pivot.rotation.set(m9PivotX, m9PivotY, m9PivotZ, 'YXZ');
     this.group.rotation.set(rotX, rotY, rotZ, 'YXZ');
+    this.group.position.x += offsetX;
+    this.group.position.y += offsetY;
     this.group.position.z += thrust;
   }
 
@@ -776,8 +792,8 @@ export class WeaponManager extends EventTarget {
       : knife.variant === 'm9' ? new THREE.Euler(.96,.17,-.08,'YXZ') : new THREE.Euler(1.02, .2, -.1, 'YXZ');
     this.group.userData.baseRotation = baseRotation;
     this.group.rotation.copy(baseRotation);
-    this.group.position.set(knife.variant==='m9'?.38:.4, knife.variant === 'm9' ? -.43 : knife.variant === 'karambit' ? -.39 : -.4, knife.variant === 'karambit' ? -1.22 : knife.variant === 'm9' ? -1.08 : -1);
-    this.group.scale.setScalar(knife.variant === 'karambit' ? .58 : knife.variant === 'm9' ? .64 : .68);
+    this.group.position.set(knife.variant==='m9'?.36:.4, knife.variant === 'm9' ? -.46 : knife.variant === 'karambit' ? -.39 : -.4, knife.variant === 'karambit' ? -1.22 : knife.variant === 'm9' ? -1.34 : -1);
+    this.group.scale.setScalar(knife.variant === 'karambit' ? .58 : knife.variant === 'm9' ? .6 : .68);
   }
 
   dispatch(type) {

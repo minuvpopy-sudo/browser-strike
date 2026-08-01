@@ -473,7 +473,8 @@ test('M9 имеет широкий клинок, отверстие, насеч�
   const manager=new WeaponManager(new THREE.Group(),player,{}, {}, {knifeStyle:()=>KNIFE_SKINS.doodle});
   assert.ok(manager.group.getObjectByName('m9-pivot'));assert.ok(manager.group.getObjectByName('m9-blade'));assert.ok(manager.group.getObjectByName('m9-guard-ring'));
   assert.ok(manager.group.getObjectByName('m9-grip-rib'));assert.equal(manager.group.getObjectsByProperty('name','m9-serration').length,7);assert.equal(KNIFE_SKINS.doodle.pattern,'doodle');
-  const blade=manager.group.getObjectByName('m9-blade');assert.equal(blade.material.userData.doodle,true);manager.drawTime=0;knife.inspecting=1.5;manager.update(.08);assert.notEqual(manager.group.getObjectByName('m9-pivot').rotation.x,0);
+  const blade=manager.group.getObjectByName('m9-blade');assert.equal(blade.material.userData.doodle,true);assert.ok(manager.group.position.z<=-1.3);assert.ok(manager.group.scale.x<=.61);
+  manager.drawTime=0;knife.inspecting=1.8;manager.update(.08);const pivot=manager.group.getObjectByName('m9-pivot');assert.notEqual(pivot.rotation.x,0);assert.ok(Math.abs(pivot.rotation.y)<1.1);assert.ok(manager.group.position.z<-1.4);
 });
 
 test('ящики и платформы имеют верхнюю коллизию и доступны для запрыгивания',()=>{
