@@ -1,0 +1,44 @@
+name: Карта для мастерской
+description: Отправить JSON-карту в общую мастерскую Browser Strike
+title: "[КАРТА] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Скачайте карту в конструкторе игры и прикрепите полученный JSON-файл ниже. После проверки карта появится в общем каталоге.
+  - type: input
+    id: map_name
+    attributes:
+      label: Название карты
+      placeholder: Sand Arena
+    validations:
+      required: true
+  - type: input
+    id: author
+    attributes:
+      label: Автор
+      placeholder: Ник игрока
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Описание
+      description: Расскажите о размере, маршрутах и режиме карты.
+    validations:
+      required: true
+  - type: textarea
+    id: map_file
+    attributes:
+      label: JSON-файл карты
+      description: Перетащите сюда скачанный JSON-файл или добавьте ссылку на публичный GitHub Gist.
+    validations:
+      required: true
+  - type: checkboxes
+    id: rights
+    attributes:
+      label: Подтверждение
+      options:
+        - label: Я создал эту карту и разрешаю добавить её в публичную мастерскую Browser Strike.
+          required: true

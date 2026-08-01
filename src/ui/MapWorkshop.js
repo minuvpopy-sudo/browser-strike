@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { MAP_MATERIALS, WORKSHOP_IMPORT_MAX_BYTES, WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../map/WorkshopMap.js';
 import { MATERIAL_ATLAS_CELLS, MATERIAL_ATLAS_URL, createAtlasMaterials } from '../map/MaterialLibrary.js';
+import { fetchCommunityMap, githubMapSubmissionUrl, loadCommunityCatalog } from '../map/GitHubWorkshop.js';
 
 export class MapWorkshop extends EventTarget {
   constructor({ storage = globalThis.localStorage } = {}) {
-    super();this.store = new WorkshopStore(storage);this.map = null;this.tool = 'select';this.selectedId = null;this.active = false;
+    super();this.store = new WorkshopStore(storage);this.map = null;this.tool = 'select';this.selectedId = null;this.active = false;this.communityMaps=[];this.communityLoaded=false;this.communityLoading=false;
     this.objectGroup = new THREE.Group();this.raycaster = new THREE.Raycaster();this.pointer = new THREE.Vector2();this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     this.cameraAngle = Math.PI * .25;this.cameraPitch = .86;this.zoom = 1;this.dragging = false;
   }
@@ -15,7 +16,8 @@ export class MapWorkshop extends EventTarget {
       name: document.getElementById('builder-map-name'), author: document.getElementById('builder-author'), floor: document.getElementById('builder-floor'),
       width: document.getElementById('builder-width'), depth: document.getElementById('builder-depth'), objectWidth: document.getElementById('builder-object-width'),
       objectDepth: document.getElementById('builder-object-depth'), objectHeight: document.getElementById('builder-object-height'), material: document.getElementById('builder-material'), rampDirection: document.getElementById('builder-ramp-direction'),
-      importFile: document.getElementById('workshop-import-file'), texturePalette: document.getElementById('builder-texture-palette')
+      importFile: document.getElementById('workshop-import-file'), texturePalette: document.getElementById('builder-texture-palette'),
+      communityLibrary: document.getElementById('github-workshop-library'), communityStatus: document.getElementById('github-workshop-status')
     };
     for (const [id, label] of Object.entries(MAP_MATERIALS)) {
       for (const select of [this.elements.floor, this.elements.material]) { const option = document.createElement('option');option.value = id;option.textContent = label;select.append(option); }
@@ -30,6 +32,8 @@ export class MapWorkshop extends EventTarget {
     document.getElementById('builder-update-object').addEventListener('click', () => this.updateSelected());
     document.getElementById('workshop-import').addEventListener('click', () => this.elements.importFile.click());
     this.elements.importFile.addEventListener('change', (event) => this.importFile(event.target.files?.[0]));
+    document.getElementById('github-workshop-refresh')?.addEventListener('click',()=>this.loadCommunityMaps(true));
+    document.getElementById('github-workshop-submit')?.addEventListener('click',()=>this.submitToGitHub());
     for (const element of [this.elements.name, this.elements.author, this.elements.floor, this.elements.width, this.elements.depth]) element.addEventListener('change', () => this.updateMapFields());
     this.elements.material.addEventListener('change',()=>this.syncTextureSelection());
     this.setupRenderer();this.renderLibrary();this.newMap(false);return this;
@@ -54,6 +58,7 @@ export class MapWorkshop extends EventTarget {
     this.active = id === 'workshop-menu';
     if (!this.active) { this.renderer?.setAnimationLoop(null);return; }
     if (!this.materialLibrary) { this.materialLibrary=createAtlasMaterials({anisotropy:4});this.editorMaterials=this.materialLibrary.materials; }
+    if(!this.communityLoaded&&!this.communityLoading)this.loadCommunityMaps();
     this.buildTexturePalette();this.resize();this.renderLibrary();this.rebuildScene();this.renderWorkshop??=()=>this.renderer.render(this.scene,this.camera);this.renderer.setAnimationLoop(this.renderWorkshop);
   }
 
@@ -192,6 +197,43 @@ export class MapWorkshop extends EventTarget {
     catch (error) { this.setStatus(error.message || 'Не удалось импортировать карту', 'error'); }
     finally { this.elements.importFile.value = ''; }
   }
+
+  async loadCommunityMaps(force=false) {
+    if(this.communityLoading||this.communityLoaded&&!force)return;this.communityLoading=true;this.setCommunityStatus('Загрузка каталога GitHub…');
+    try{const catalog=await loadCommunityCatalog();this.communityMaps=catalog.maps;this.communityLoaded=true;this.renderCommunityLibrary();this.setCommunityStatus(`Доступно карт: ${catalog.maps.length}`,'success');}
+    catch(error){this.communityMaps=[];this.renderCommunityLibrary();this.setCommunityStatus(error.message||'Не удалось открыть GitHub-мастерскую','error');}
+    finally{this.communityLoading=false;}
+  }
+
+  async getCommunityMap(entry,action) {
+    this.setCommunityStatus(`Загрузка «${entry.name}»…`);
+    try{
+      const map=await fetchCommunityMap(entry);
+      if(action==='play'){this.use(map);this.setCommunityStatus(`Карта «${map.name}» выбрана для игры`,'success');return;}
+      if(action==='download'){this.exportMap(map);this.setCommunityStatus(`Карта «${map.name}» скачана`,'success');return;}
+      const saved=this.store.save(map);this.renderLibrary();this.edit(saved);this.setCommunityStatus(`Карта «${saved.name}» установлена в «Мои карты»`,'success');
+    }catch(error){this.setCommunityStatus(error.message||'Не удалось загрузить карту','error');}
+  }
+
+  submitToGitHub() {
+    if(!this.map)return this.setCommunityStatus('Сначала создайте или откройте карту','error');this.updateMapFields();this.exportMap(this.map);
+    const opened=globalThis.open?.(githubMapSubmissionUrl(this.map),'_blank','noopener,noreferrer');
+    if(opened===null)return this.setCommunityStatus('Файл скачан. Разрешите всплывающие окна и нажмите ещё раз','error');
+    this.setCommunityStatus('JSON скачан. Прикрепите его к открывшейся заявке GitHub','success');
+  }
+
+  renderCommunityLibrary() {
+    const root=this.elements?.communityLibrary;if(!root)return;root.replaceChildren();
+    if(!this.communityMaps.length){const empty=document.createElement('p');empty.className='workshop-empty';empty.textContent='В общем каталоге пока нет доступных карт';root.append(empty);return;}
+    for(const entry of this.communityMaps){
+      const card=document.createElement('article');card.className=`workshop-map-card community-map-card${entry.featured?' featured':''}`;
+      const info=document.createElement('div');const title=document.createElement('strong');title.textContent=entry.name;const description=document.createElement('span');description.textContent=entry.description;const details=[entry.author,entry.objects?`${entry.objects} объектов`:'',entry.width&&entry.depth?`${entry.width}×${entry.depth}`:''].filter(Boolean);const meta=document.createElement('small');meta.textContent=details.join(' · ');info.append(title,description,meta);
+      const actions=document.createElement('div');const button=(label,action,className='')=>{const element=document.createElement('button');element.textContent=label;element.className=className;element.addEventListener('click',action);return element;};
+      actions.append(button('Играть',()=>this.getCommunityMap(entry,'play'),'accent'),button('Установить',()=>this.getCommunityMap(entry,'install')),button('Скачать',()=>this.getCommunityMap(entry,'download')));card.append(info,actions);root.append(card);
+    }
+  }
+
+  setCommunityStatus(text,type='') { if(!this.elements?.communityStatus)return;this.elements.communityStatus.textContent=text;this.elements.communityStatus.className=`status-line github-workshop-status${type?` ${type}`:''}`; }
 
   renderLibrary() {
     if (!this.elements?.library) return;const maps = this.store.list();this.elements.library.replaceChildren();

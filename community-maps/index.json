@@ -1,0 +1,17 @@
+{
+  "format": "browser-strike-community-catalog",
+  "version": 1,
+  "maps": [
+    {
+      "id": "dust-colosseum-xl",
+      "name": "Dust Colosseum XL",
+      "author": "Browser Strike",
+      "description": "Большая карта с маршрутами, платформами, рампами и точками A/B.",
+      "objects": 164,
+      "width": 260,
+      "depth": 260,
+      "featured": true,
+      "file": "../converted-maps/dust-colosseum-xl.browser-strike.json"
+    }
+  ]
+}

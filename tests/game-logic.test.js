@@ -36,6 +36,7 @@ import { MATERIAL_ATLAS_CELLS } from '../src/map/MaterialLibrary.js';
 import { MapWorkshop } from '../src/ui/MapWorkshop.js';
 import { MAIN_SAND_TEXTURE_URL } from '../src/map/DustInspiredMap.js';
 import { ADMIN_PROMO_CODES, normalizePromoCode } from '../src/ui/PromoAdminMenu.js';
+import { GITHUB_WORKSHOP_FORMAT, fetchCommunityMap, githubMapSubmissionUrl, normalizeCommunityCatalog } from '../src/map/GitHubWorkshop.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -169,6 +170,13 @@ test('локальная мастерская сохраняет и удаляе
   const values=new Map();const storage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)};const store=new WorkshopStore(storage,'test.maps');
   const saved=store.save(createWorkshopMap({name:'Arena'}));assert.equal(store.list().length,1);assert.equal(store.get(saved.id).name,'Arena');
   store.remove(saved.id);assert.equal(store.list().length,0);
+});
+
+test('GitHub-мастерская проверяет каталог и устанавливает карту без токена',async()=>{
+  const source=createWorkshopMap({name:'Карта друга',author:'Игрок'});const catalog=normalizeCommunityCatalog({format:GITHUB_WORKSHOP_FORMAT,version:1,maps:[{id:'friend-map',name:source.name,author:source.author,file:'maps/friend.json',objects:source.objects.length,width:96,depth:96}]},'https://raw.githubusercontent.com/minuvpopy-sudo/browser-strike/main/community-maps/index.json');
+  assert.equal(catalog.maps.length,1);assert.equal(catalog.maps[0].fileUrl,'https://raw.githubusercontent.com/minuvpopy-sudo/browser-strike/main/community-maps/maps/friend.json');
+  const map=await fetchCommunityMap(catalog.maps[0],{fetcher:async()=>({ok:true,status:200,headers:{get:()=>null},text:async()=>JSON.stringify(source)})});assert.equal(map.name,'Карта друга');assert.equal(map.format,'browser-strike-map');
+  const submission=new URL(githubMapSubmissionUrl(source));assert.equal(submission.hostname,'github.com');assert.equal(submission.searchParams.get('template'),'community-map.yml');
 });
 
 test('передовые точки ботов свободны и дают врага у каждой базы',()=>{
