@@ -5,7 +5,8 @@ const availabilityKey = (context) => [
   context.player.money,
   context.player.team,
   context.inBuyZone,
-  context.buyTime > 0
+  context.buyTime > 0,
+  Boolean(context.free)
 ].join('|');
 
 export class BuyMenu extends EventTarget {
@@ -56,8 +57,8 @@ export class BuyMenu extends EventTarget {
   }
 
   updateStatus() {
-    document.getElementById('buy-money').textContent = `$${this.context.player.money}`;
-    document.getElementById('buy-time').textContent = `ОСТАЛОСЬ ${Math.max(0, Math.ceil(this.context.buyTime))} СЕК.`;
+    document.getElementById('buy-money').textContent = this.context.free ? 'БЕСПЛАТНО' : `$${this.context.player.money}`;
+    document.getElementById('buy-time').textContent = this.context.free ? 'КОМАНДНЫЙ БОЙ' : `ОСТАЛОСЬ ${Math.max(0, Math.ceil(this.context.buyTime))} СЕК.`;
   }
 
   renderItems() {
@@ -77,14 +78,15 @@ export class BuyMenu extends EventTarget {
         cost: item.cost,
         inBuyZone: this.context.inBuyZone,
         buyTimeLeft: this.context.buyTime,
-        available
+        available,
+        free: this.context.free
       });
       const button = document.createElement('button');
       button.type = 'button';
       button.className = `buy-item${allowed ? '' : ' disabled'}`;
       const grenadeDetails={he:'Урон по площади',flash:'Ослепляет игроков и ботов',smoke:'Создаёт плотную дымовую завесу',decoy:'Имитирует очередь выстрелов'};
       const details=item.category==='grenades'?(grenadeDetails[item.id]||'Одноразовое снаряжение'):item.damage?`Урон ${item.damage} · Магазин ${item.mag}`:'Защита и боезапас';
-      button.innerHTML = `<strong>${item.name}</strong><small>${details}</small><span class="price">$${item.cost}</span>${!available ? '<small>Недоступно стороне</small>' : this.context.player.money < item.cost ? '<small>Недостаточно денег</small>' : ''}`;
+      button.innerHTML = `<strong>${item.name}</strong><small>${details}</small><span class="price">${this.context.free?'БЕСПЛАТНО':`$${item.cost}`}</span>${!available ? '<small>Недоступно стороне</small>' : !this.context.free&&this.context.player.money < item.cost ? '<small>Недостаточно денег</small>' : ''}`;
       button.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return;
         event.preventDefault();

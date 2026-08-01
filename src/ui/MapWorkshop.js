@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { MAP_MATERIALS, WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../map/WorkshopMap.js';
-
-const EDITOR_COLORS = { sandstone: 0xc6a66d, brick: 0x884839, concrete: 0x777d79, metal: 0x47534f, wood: 0x765033, tech: 0x245d68, grass: 0x4d6d40, ice: 0x84b8c9 };
+import { createAtlasMaterials } from '../map/MaterialLibrary.js';
 
 export class MapWorkshop extends EventTarget {
   constructor({ storage = globalThis.localStorage } = {}) {
@@ -36,10 +35,11 @@ export class MapWorkshop extends EventTarget {
 
   setupRenderer() {
     try {
-      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });this.renderer.outputColorSpace = THREE.SRGBColorSpace;this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
+      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });this.renderer.outputColorSpace = THREE.SRGBColorSpace;this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.35));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.shadowMap.autoUpdate=false;
       this.elements.viewport.append(this.renderer.domElement);this.scene = new THREE.Scene();this.scene.background = new THREE.Color(0x17201b);
       this.camera = new THREE.PerspectiveCamera(48, 1, .1, 2000);this.scene.add(new THREE.HemisphereLight(0xe6f1ff, 0x263128, 2.2));
-      const sun = new THREE.DirectionalLight(0xffe3ae, 3);sun.position.set(-30, 60, 25);this.scene.add(sun);this.scene.add(this.objectGroup);
+      const sun = new THREE.DirectionalLight(0xffe3ae, 3);sun.position.set(-30, 60, 25);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);this.scene.add(sun);this.scene.add(this.objectGroup);
+      this.materialLibrary=createAtlasMaterials({anisotropy:4});this.editorMaterials=this.materialLibrary.materials;
       this.renderer.domElement.addEventListener('pointerdown', (event) => this.onPointerDown(event));
       this.renderer.domElement.addEventListener('pointermove', (event) => this.onPointerMove(event));
       window.addEventListener('pointerup', () => { this.dragging = false; });
@@ -113,21 +113,22 @@ export class MapWorkshop extends EventTarget {
 
   rebuildScene() {
     if (!this.scene || !this.map) return;
-    for (const child of [...this.objectGroup.children]) { this.objectGroup.remove(child);child.traverse((object) => { object.geometry?.dispose?.();object.material?.dispose?.(); }); }
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(this.map.size.width, this.map.size.depth), new THREE.MeshStandardMaterial({ color: EDITOR_COLORS[this.map.floorMaterial] || 0x6e756d, roughness: .95 }));floor.rotation.x = -Math.PI / 2;floor.position.y = -.02;this.objectGroup.add(floor);
-    const grid = new THREE.GridHelper(Math.max(this.map.size.width, this.map.size.depth), Math.round(Math.max(this.map.size.width, this.map.size.depth) / 4), 0x8eaa70, 0x405044);grid.position.y = .015;this.objectGroup.add(grid);
+    for (const child of [...this.objectGroup.children]) { this.objectGroup.remove(child);child.traverse((object) => { object.geometry?.dispose?.();if(object.userData.workshopOwnedMaterial){if(Array.isArray(object.material))object.material.forEach((material)=>material.dispose?.());else object.material?.dispose?.();} }); }
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(this.map.size.width, this.map.size.depth), this.editorMaterials[this.map.floorMaterial] || this.editorMaterials.ground);floor.rotation.x = -Math.PI / 2;floor.position.y = -.02;floor.receiveShadow=true;this.objectGroup.add(floor);
+    const grid = new THREE.GridHelper(Math.max(this.map.size.width, this.map.size.depth), Math.round(Math.max(this.map.size.width, this.map.size.depth) / 4), 0x8eaa70, 0x405044);grid.position.y = .015;grid.userData.workshopOwnedMaterial=true;this.objectGroup.add(grid);
     for (const object of this.map.objects) {
-      const material = new THREE.MeshStandardMaterial({ color: EDITOR_COLORS[object.material] || 0x888888, roughness: object.material === 'metal' || object.material === 'tech' ? .4 : .78, metalness: object.material === 'metal' || object.material === 'tech' ? .55 : .05, emissive: object.id === this.selectedId ? 0x38552a : 0x000000 });
+      const material = this.editorMaterials[object.material] || this.editorMaterials.concrete;
       let mesh;if(object.type==='ramp'){const alongX=object.direction==='east'||object.direction==='west';const run=alongX?object.w:object.d;const length=Math.hypot(run,object.h);mesh=new THREE.Mesh(new THREE.BoxGeometry(alongX?length:object.w,.28,alongX?object.d:length),material);const angle=Math.atan2(object.h,run);if(alongX)mesh.rotation.z=object.direction==='east'?angle:-angle;else mesh.rotation.x=object.direction==='north'?angle:-angle;}else mesh=new THREE.Mesh(new THREE.BoxGeometry(object.w, object.h, object.d), material);mesh.position.set(object.x, object.h / 2, object.z);mesh.userData.mapObjectId = object.id;mesh.castShadow = mesh.receiveShadow = true;this.objectGroup.add(mesh);
+      if(object.id===this.selectedId){const outline=new THREE.BoxHelper(mesh,0xaeea72);outline.userData.mapObjectId=object.id;outline.raycast=()=>{};this.objectGroup.add(outline);}
     }
     this.addMarker(this.map.attackerSpawn, 0xe59b43, 'T');this.addMarker(this.map.defenderSpawn, 0x4aa6d8, 'CT');
     for (const site of this.map.bombSites) this.addMarker(site, site.id === 'A' ? 0xe26043 : 0xe4b248, site.id, true);
-    this.updateCamera();this.resize();
+    this.renderer.shadowMap.needsUpdate=true;this.updateCamera();this.resize();
   }
 
   addMarker(point, color, name, ring = false) {
     const geometry = ring ? new THREE.TorusGeometry(point.radius || 6, .25, 8, 32) : new THREE.CylinderGeometry(0, 1.25, 3.5, 8);
-    const marker = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .82 }));marker.name = name;marker.position.set(point.x, ring ? .05 : 1.75, point.z);if (ring) marker.rotation.x = Math.PI / 2;this.objectGroup.add(marker);
+    const marker = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .82 }));marker.name = name;marker.userData.workshopOwnedMaterial=true;marker.position.set(point.x, ring ? .05 : 1.75, point.z);if (ring) marker.rotation.x = Math.PI / 2;this.objectGroup.add(marker);
   }
 
   updateCamera() {

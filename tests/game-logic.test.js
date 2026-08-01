@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { COMBAT, ECONOMY, awardMoney, lossReward, canBuy, hitDamage } from '../src/config/MatchRules.js';
+import { COMBAT, ECONOMY, awardMoney, lossReward, canBuy, effectiveBuyCost, hitDamage } from '../src/config/MatchRules.js';
 import { WEAPONS, GRENADES } from '../src/weapons/WeaponDefinitions.js';
 import { Firearm } from '../src/weapons/Firearm.js';
 import { NavigationGraph } from '../src/map/NavigationGraph.js';
@@ -11,14 +11,14 @@ import { WeaponManager } from '../src/weapons/WeaponManager.js';
 import { Knife } from '../src/weapons/Knife.js';
 import { CollisionWorld } from '../src/map/CollisionWorld.js';
 import { BotNavigation } from '../src/bots/BotNavigation.js';
-import { BotCombat } from '../src/bots/BotCombat.js';
+import { BOT_DIFFICULTIES, BotCombat } from '../src/bots/BotCombat.js';
 import { BotAI } from '../src/bots/BotAI.js';
 import { BOT_FRONTLINE_SPAWNS } from '../src/bots/BotManager.js';
 import { Player } from '../src/player/Player.js';
 import { Bot } from '../src/bots/Bot.js';
 import { BombDefusalMode } from '../src/modes/BombDefusalMode.js';
 import { BuyMenu } from '../src/ui/BuyMenu.js';
-import { applyDamageSafely, selectMeleeTarget } from '../src/core/CombatResolver.js';
+import { applyDamageSafely, selectMeleeTarget, selectRangedHit } from '../src/core/CombatResolver.js';
 import { InputManager } from '../src/core/InputManager.js';
 import { GameLoop } from '../src/core/GameLoop.js';
 import { KNIFE_SKINS } from '../src/skins/KnifeSkinDefinitions.js';
@@ -32,6 +32,7 @@ import { SHOT_PROFILES, SHOT_SAMPLES, shotProfile, spatialShotMix } from '../src
 import { cleanPlayerName, createRoomCode, normalizeRoomCode, roomPeerId } from '../src/network/OnlineSession.js';
 import { RemotePlayer } from '../src/network/RemotePlayer.js';
 import { WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../src/map/WorkshopMap.js';
+import { MATERIAL_ATLAS_CELLS } from '../src/map/MaterialLibrary.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -44,6 +45,23 @@ test('экономика ограничивает деньги и учитыва
 test('урон учитывает зону, броню и дистанцию',()=>{
   const chest=hitDamage(36,'chest',10,150,0,false),head=hitDamage(36,'head',10,150,0,false),armored=hitDamage(36,'chest',10,150,100,true);
   assert.ok(head>chest);assert.ok(armored<chest);assert.ok(hitDamage(36,'chest',145,150,0,false)<chest);assert.ok(hitDamage(500,'head',1,200,0,false)<COMBAT.maxHealth);
+});
+
+test('в командном бою закупка может быть бесплатной',()=>{
+  assert.equal(effectiveBuyCost(4750,true),0);assert.equal(effectiveBuyCost(4750,false),4750);
+  assert.equal(canBuy({money:0,cost:4750,inBuyZone:true,buyTimeLeft:Infinity,available:true,free:true}),true);
+});
+
+test('сложность ботов меняет реакцию, точность, обзор и скорость',()=>{
+  assert.deepEqual(Object.keys(BOT_DIFFICULTIES),['easy','normal','hard','expert']);
+  assert.ok(BOT_DIFFICULTIES.easy.reaction>BOT_DIFFICULTIES.expert.reaction);
+  assert.ok(BOT_DIFFICULTIES.easy.accuracy<BOT_DIFFICULTIES.expert.accuracy);
+  assert.ok(BOT_DIFFICULTIES.easy.sightRange<BOT_DIFFICULTIES.expert.sightRange);
+  assert.ok(BOT_DIFFICULTIES.easy.moveScale<BOT_DIFFICULTIES.expert.moveScale);
+});
+
+test('атлас содержит новые текстуры для карты и мастерской',()=>{
+  for(const material of ['darkConcrete','plaster','whiteBrick','redBand','blueMetal','masonry','asphalt','tile','dust'])assert.ok(MATERIAL_ATLAS_CELLS[material]);
 });
 
 test('боеприпасы не уходят ниже нуля, перезарядка переносит патроны',()=>{
@@ -305,6 +323,14 @@ test('удар ножом попадает в цель перед игроком
   const behind={alive:true,position:new THREE.Vector3(0,0,1)};
   assert.equal(selectMeleeTarget({origin,direction,targets:[behind,close],range:2.8}),close);
   assert.equal(selectMeleeTarget({origin,direction,targets:[close],range:2.8,isBlocked:()=>true}),null);
+});
+
+test('стабильные зоны попадания регистрируют голову и не стреляют сквозь стену',()=>{
+  const origin=new THREE.Vector3(0,1.7,0),direction=new THREE.Vector3(0,0,-1);
+  const target={alive:true,position:new THREE.Vector3(.2,0,-12)};
+  const hit=selectRangedHit({origin,direction,targets:[target],maxDistance:100});
+  assert.equal(hit.entity,target);assert.equal(hit.zone,'head');assert.ok(hit.distance<12);
+  assert.equal(selectRangedHit({origin,direction,targets:[target],maxDistance:100,blockerDistance:5}),null);
 });
 
 test('некорректная цель попадания не останавливает игру исключением',()=>{

@@ -1,13 +1,15 @@
 import { hitDamage } from '../config/MatchRules.js';
 
-const DIFFICULTY = {
-  easy: { reaction: .58, accuracy: .44, burst: 3 }, normal: { reaction: .28, accuracy: .68, burst: 5 },
-  hard: { reaction: .16, accuracy: .82, burst: 7 }, expert: { reaction: .09, accuracy: .92, burst: 9 }
-};
+export const BOT_DIFFICULTIES = Object.freeze({
+  easy: Object.freeze({ reaction: .72, accuracy: .34, burst: 2, burstPause: .42, minHitChance: .03, headChance: .025, sightRange: 38, fovDot: .38, moveScale: .86, memory: 2.2, thinkMin: .2, thinkMax: .34 }),
+  normal: Object.freeze({ reaction: .36, accuracy: .58, burst: 4, burstPause: .28, minHitChance: .07, headChance: .065, sightRange: 52, fovDot: .18, moveScale: 1, memory: 3.5, thinkMin: .12, thinkMax: .22 }),
+  hard: Object.freeze({ reaction: .18, accuracy: .74, burst: 6, burstPause: .18, minHitChance: .11, headChance: .11, sightRange: 65, fovDot: .03, moveScale: 1.08, memory: 4.8, thinkMin: .075, thinkMax: .14 }),
+  expert: Object.freeze({ reaction: .085, accuracy: .86, burst: 8, burstPause: .1, minHitChance: .16, headChance: .17, sightRange: 78, fovDot: -.12, moveScale: 1.16, memory: 6.2, thinkMin: .045, thinkMax: .09 })
+});
 
 export class BotCombat {
   constructor(bot, difficulty, audio) {
-    this.bot = bot; this.profile = DIFFICULTY[difficulty] || DIFFICULTY.normal; this.audio = audio;
+    this.bot = bot; this.difficulty = BOT_DIFFICULTIES[difficulty] ? difficulty : 'normal';this.profile = BOT_DIFFICULTIES[this.difficulty]; this.audio = audio;
     this.cooldown = 0; this.reaction = this.profile.reaction; this.burst = 0;
   }
 
@@ -33,13 +35,13 @@ export class BotCombat {
     this.bot.state = 'attack'; this.cooldown = 1 / this.bot.weapon.rate; this.bot.ammo--; this.bot.flashTime = .055;
     this.audio?.shotAt?.(this.bot.position, this.bot.weapon, .82);
     this.burst++;
-    if (this.burst >= this.profile.burst) { this.cooldown += .14 + Math.random() * .2; this.burst = 0; }
+    if (this.burst >= this.profile.burst) { this.cooldown += this.profile.burstPause + Math.random() * this.profile.burstPause * .55; this.burst = 0; }
     const distance = this.bot.position.distanceTo(target.position);
     const movePenalty = Math.min(.12, Math.hypot(this.bot.velocity.x, this.bot.velocity.z) * .009);
-    const targetScale = target.isPlayer ? .72 : 1;
-    const hitChance = Math.max(.12, Math.max(.24, this.profile.accuracy - movePenalty - distance * .0027) * targetScale);
+    const targetScale = target.isPlayer ? .78 : 1;
+    const hitChance = Math.max(this.profile.minHitChance, Math.max(.08, this.profile.accuracy - movePenalty - distance * .0032) * targetScale);
     if (Math.random() >= hitChance) return;
-    const head = !target.isPlayer && Math.random() < this.profile.accuracy * .16;
+    const head = Math.random() < this.profile.headChance * (target.isPlayer ? .55 : 1);
     const rawDamage = hitDamage(this.bot.weapon.damage, head ? 'head' : 'chest', distance, this.bot.weapon.range, target.armor || 0, target.helmet || false);
     const damage = target.isPlayer ? Math.max(2, Math.round(rawDamage * .62)) : rawDamage;
     const died = target.takeDamage(damage, this.bot);

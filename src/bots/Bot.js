@@ -40,18 +40,18 @@ export class Bot {
   buy() {
     const purchased = [];
     const choices = this.team === 'attackers' ? ['ak47', 'galil', 'mp5', 'deagle'] : ['m4a1', 'famas', 'mp5', 'deagle'];
-    const equipmentReserve = this.money >= 1650 ? (this.team === 'defenders' ? 1050 : 650) : 0;
+    const free=Boolean(this.freeBuy);const equipmentReserve = free?0:this.money >= 1650 ? (this.team === 'defenders' ? 1050 : 650) : 0;
     for (const id of choices) {
       const definition = WEAPONS[id];
-      if (this.money - equipmentReserve >= definition.cost) {
-        this.money -= definition.cost; this.weapon = definition; this.ammo = definition.mag; this.reserve = definition.reserve; purchased.push(id); break;
+      if (free||this.money - equipmentReserve >= definition.cost) {
+        if(!free)this.money -= definition.cost; this.weapon = definition; this.ammo = definition.mag; this.reserve = definition.reserve; purchased.push(id); break;
       }
     }
-    if (this.team === 'defenders' && this.money >= 400) {
-      this.money -= 400; this.defuseKit = true; purchased.push('defuse');
+    if (this.team === 'defenders' && (free||this.money >= 400)) {
+      if(!free)this.money -= 400; this.defuseKit = true; purchased.push('defuse');
     }
-    if (this.money >= 1000) {
-      this.money -= 1000; this.armor = 100; this.helmet = true; purchased.push('helmet');
+    if (free||this.money >= 1000) {
+      if(!free)this.money -= 1000; this.armor = 100; this.helmet = true; purchased.push('helmet');
     } else if (this.money >= 650) {
       this.money -= 650; this.armor = 100; purchased.push('kevlar');
     }

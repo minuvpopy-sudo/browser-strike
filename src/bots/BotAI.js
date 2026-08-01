@@ -7,6 +7,7 @@ export class BotAI {
     this.bot = bot;
     this.navigation = new BotNavigation(graph, collision);
     this.combat = new BotCombat(bot, difficulty, audio);
+    this.profile = this.combat.profile;
     this.collision = collision;
     this.patrolPoints = [...graph.nodes.values()].map((node) => new THREE.Vector3(node.x, 0, node.z));
     this.reset();
@@ -38,13 +39,13 @@ export class BotAI {
     this.patrolTimer -= dt;
 
     if (this.thinkTimer <= 0) {
-      this.thinkTimer = .09 + Math.random() * .08;
+      this.thinkTimer = this.profile.thinkMin + Math.random() * (this.profile.thinkMax - this.profile.thinkMin);
       const attacker = this.bot.lastAttacker;
       const retaliation = attacker?.alive && attacker.team !== this.bot.team && this.hasSight(attacker, smoke, true) ? attacker : null;
       this.target = retaliation || this.findVisible(enemies, smoke);
       if (this.target) {
         this.bot.lastSeen = this.target.position.clone();
-        this.memoryTimer = 4.2 + Math.random() * 1.8;
+        this.memoryTimer = this.profile.memory + Math.random() * this.profile.memory * .35;
         this.bot.state = retaliation ? 'return-fire' : 'see-enemy';
       }
     }
@@ -52,7 +53,7 @@ export class BotAI {
     const visible = Boolean(this.target?.alive && this.hasSight(this.target, smoke, this.target === this.bot.lastAttacker));
     if (visible) {
       this.bot.lastSeen = this.target.position.clone();
-      this.memoryTimer = Math.max(this.memoryTimer, 3.2);
+      this.memoryTimer = Math.max(this.memoryTimer, this.profile.memory);
       this.combatMovement(dt, this.target, objective);
       this.face(this.target.position);
       this.combat.update(dt, this.target, true, onKill);
@@ -84,7 +85,7 @@ export class BotAI {
     if (!this.navigation.target || this.navigation.target.distanceToSquared(destination) > 2.25 || this.navigation.repath <= 0) {
       this.navigation.setTarget(this.bot, destination);
     }
-    this.navigation.update(this.bot, dt, this.bot.state === 'investigate' ? 4.45 : 3.75 + (this.bot.index % 3) * .16);
+    this.navigation.update(this.bot, dt, (this.bot.state === 'investigate' ? 4.45 : 3.75 + (this.bot.index % 3) * .16) * this.profile.moveScale);
     this.face(this.navigation.path[this.navigation.index] || destination);
   }
 
@@ -92,12 +93,12 @@ export class BotAI {
     const distance = this.bot.position.distanceTo(target.position);
     if (this.bot.hasBomb) {
       this.navigation.setTarget(this.bot, objective);
-      this.navigation.update(this.bot, dt, 4.25);
+      this.navigation.update(this.bot, dt, 4.25 * this.profile.moveScale);
       return;
     }
     if (distance > 17) {
       this.navigation.setTarget(this.bot, target.position);
-      this.navigation.update(this.bot, dt, 4.5);
+      this.navigation.update(this.bot, dt, 4.5 * this.profile.moveScale);
       return;
     }
 
@@ -112,7 +113,7 @@ export class BotAI {
     else if (distance > 12) side.addScaledVector(toward, .45);
     side.normalize();
     const previousX = this.bot.position.x; const previousZ = this.bot.position.z;
-    const moved = this.collision.moveCircle(this.bot.position, { x: side.x * 3.15 * dt, z: side.z * 3.15 * dt }, .55);
+    const moved = this.collision.moveCircle(this.bot.position, { x: side.x * 3.15 * this.profile.moveScale * dt, z: side.z * 3.15 * this.profile.moveScale * dt }, .55);
     const groundY=this.collision.groundHeightAt?.(moved.x,moved.z)||0;if(groundY-this.bot.position.y>.75){moved.x=previousX;moved.z=previousZ;}
     this.bot.position.set(moved.x, this.collision.groundHeightAt?.(moved.x,moved.z)||0, moved.z);
     this.bot.velocity.set((moved.x - previousX) / dt, 0, (moved.z - previousZ) / dt);
@@ -138,7 +139,7 @@ export class BotAI {
     for (const enemy of enemies) {
       if (!enemy.alive) continue;
       const candidateDistance = this.bot.position.distanceToSquared(enemy.position);
-      if (candidateDistance < distance && candidateDistance < 62 * 62 && this.hasSight(enemy, smoke)) {
+      if (candidateDistance < distance && candidateDistance < this.profile.sightRange * this.profile.sightRange && this.hasSight(enemy, smoke)) {
         distance = candidateDistance;
         best = enemy;
       }
@@ -155,7 +156,7 @@ export class BotAI {
     if (ignoreFieldOfView || distance < 7) return true;
     direction.normalize();
     const forward = new THREE.Vector3(Math.sin(this.bot.group.rotation.y), 0, Math.cos(this.bot.group.rotation.y));
-    return forward.dot(direction) > .12;
+    return forward.dot(direction) > this.profile.fovDot;
   }
 
   face(target) {

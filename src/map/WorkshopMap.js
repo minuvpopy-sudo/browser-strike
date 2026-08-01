@@ -3,7 +3,9 @@ export const WORKSHOP_MAP_VERSION = 2;
 export const WORKSHOP_MAP_MAX_SIZE = 480;
 export const MAP_MATERIALS = Object.freeze({
   sandstone: 'Песчаник', brick: 'Кирпич', concrete: 'Бетон', metal: 'Металл',
-  wood: 'Дерево', tech: 'Техно-панель', grass: 'Трава', ice: 'Лёд'
+  wood: 'Дерево', tech: 'Техно-панель', grass: 'Мятные блоки', ice: 'Светлая плитка',
+  darkConcrete: 'Тёмный бетон', plaster: 'Старая штукатурка', whiteBrick: 'Белый кирпич', redBand: 'Красная полоса',
+  blueMetal: 'Синий профнастил', masonry: 'Старая кладка', asphalt: 'Асфальт', tile: 'Белая плитка', dust: 'Пыльная земля'
 });
 
 const clamp = (value, min, max, fallback = min) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : fallback));
