@@ -29,6 +29,8 @@ import { PlayerMovement } from '../src/player/PlayerMovement.js';
 import { AutoUpdater, versionedPageUrl } from '../src/core/AutoUpdater.js';
 import { selectSpectatorTarget, takeOverBotState } from '../src/core/SpectatorMode.js';
 import { SHOT_PROFILES, SHOT_SAMPLES, shotProfile } from '../src/core/AudioManager.js';
+import { cleanPlayerName, createRoomCode, normalizeRoomCode, roomPeerId } from '../src/network/OnlineSession.js';
+import { RemotePlayer } from '../src/network/RemotePlayer.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -378,4 +380,23 @@ test('Glock-18 использует отдельный многослойный 
   const profile=shotProfile(WEAPONS.glock);
   assert.equal(profile,SHOT_PROFILES.glock);assert.ok(profile.crack.duration<profile.tail.duration);assert.ok(profile.crack.lowpass>profile.tail.lowpass);assert.ok(profile.body.frequency>profile.body.endFrequency);assert.ok(profile.slide.delay>0);assert.equal(shotProfile(WEAPONS.ak47),null);assert.equal(SHOT_SAMPLES.glock.path,'audio/glock-shot.mp3');assert.ok(SHOT_SAMPLES.glock.duration<.7);
   assert.deepEqual(Object.keys(SHOT_SAMPLES).sort(),['awp','deagle','glock','m4a1','usp']);assert.ok(SHOT_SAMPLES.m4a1.duration<.25);assert.ok(SHOT_SAMPLES.awp.duration>SHOT_SAMPLES.m4a1.duration);assert.equal(SHOT_SAMPLES.awp.path,'audio/awp1-shot.mp3');assert.ok(SHOT_SAMPLES.awp.duration<=1.1);
+});
+
+test('код онлайн-комнаты одинаково нормализуется у хозяина и гостя',()=>{
+  assert.equal(createRoomCode(new Uint8Array([0,1,2,3,4,5])),'ABCDEF');
+  assert.equal(normalizeRoomCode(' ab-cd e9!'),'ABCDE9');
+  assert.equal(roomPeerId('abC239'),'browser-strike-room-abc239');
+  assert.equal(roomPeerId('ABC'),'');
+  assert.equal(cleanPlayerName('  <Друг>   Один  '),'Друг Один');
+});
+
+test('сетевой игрок принимает позицию, оружие и урон как цель стрельбы',()=>{
+  const scene=new THREE.Scene();
+  const remote=new RemotePlayer({name:'Друг',team:'defenders',scene,spawn:{x:0,z:0}});
+  remote.applyState({x:12,y:0,z:-4,yaw:.5,health:150,armor:70,alive:true,crouched:true,spawnProtected:false,kills:2,deaths:1,money:3200,weaponId:'m4a1',ping:24});
+  remote.updateVisual(1);
+  assert.equal(remote.position.x,12);assert.equal(remote.position.z,-4);assert.equal(remote.weapon.id,'m4a1');assert.equal(remote.ping,24);assert.equal(remote.targets()[0],remote.group);
+  for(const mesh of remote.group.children.filter(child=>child.isMesh))assert.equal(mesh.userData.entity,remote);
+  assert.equal(remote.takeDamage(149),false);assert.equal(remote.takeDamage(10),true);assert.equal(remote.alive,false);assert.equal(remote.targets().length,0);
+  remote.dispose();assert.equal(scene.children.includes(remote.group),false);
 });

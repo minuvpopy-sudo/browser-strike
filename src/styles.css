@@ -19,12 +19,32 @@ h1 span { color:var(--acid); }
 .menu-button { min-height:42px;border:0;border-bottom:1px solid #ffffff14;background:linear-gradient(90deg,#1a231dd9,transparent);text-align:left;text-transform:uppercase;font-weight:700;letter-spacing:.1em;padding:0 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.12s; }
 .menu-button:hover,.menu-button:focus { padding-left:24px;background:linear-gradient(90deg,#5f6e31dd,transparent);color:#fff;outline:0; }
 .menu-button.primary { background:linear-gradient(90deg,#81942eee,transparent);color:#fff; }
+.menu-button.online-button { color:#bdeaf6;background:linear-gradient(90deg,#194657dd,transparent); }
+.menu-button.online-button:hover { background:linear-gradient(90deg,#24708bdd,transparent); }
 .menu-button.danger:hover { background:linear-gradient(90deg,#743326dd,transparent); }
 .menu-button small { color:#9da79f;font-size:10px;letter-spacing:.05em; }
 kbd { font-size:10px;color:#dfe5b0;border:1px solid #849056;padding:2px 5px; }
 .menu-footer { position:absolute;bottom:24px;left:clamp(28px,5vw,84px);right:clamp(28px,5vw,84px);display:flex;justify-content:space-between;color:#687269;font-size:10px;letter-spacing:.15em; }
 .panel-screen { align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 60% 15%,#343c29,#111713 45%,#080b09); }
 .panel-screen::before { content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#0002 4px);pointer-events:none; }
+.online-panel { width:min(820px,94vw); }
+.online-panel .lead { max-width:650px;margin-bottom:18px; }
+.online-name-label { display:grid;gap:7px;max-width:360px;color:#aab6ad;font-size:11px;letter-spacing:.1em;text-transform:uppercase; }
+.online-name-label input,.room-code-input { border:1px solid #5d6d63;background:#0d1511;color:#f4f8ef;padding:12px 14px;font:700 16px 'Russo One',sans-serif;outline:0; }
+.online-name-label input:focus,.room-code-input:focus { border-color:#b9d95a;box-shadow:0 0 0 2px #b9d95a22; }
+.online-actions { display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px; }
+.online-card { display:flex;flex-direction:column;gap:12px;min-height:190px;padding:18px;border:1px solid #ffffff1c;background:#111b16d9; }
+.online-card>small { color:#8e9d92;letter-spacing:.14em; }
+.online-card>strong { color:#d9ed79;font:30px 'Russo One',sans-serif;letter-spacing:.18em; }
+.online-card>p,.online-note { margin:0;color:#8e9d92;font-size:12px; }
+.room-code-input { text-transform:uppercase;text-align:center;font-size:25px;letter-spacing:.22em; }
+.online-status { margin-top:16px;padding:12px 14px;border-left:3px solid #7494a0;background:#0d1511;color:#cbd6ce; }
+.online-status.success { border-color:#b8d75a;color:#dff1a1; }
+.online-status.error { border-color:#d45b45;color:#ffb1a3; }
+.online-note { margin-top:10px; }
+#online-match-status { display:none;position:absolute;top:220px;left:20px;padding:6px 9px;border-left:2px solid #69bfdc;background:#0b1414cc;color:#bdeaf6;font-size:10px;letter-spacing:.08em; }
+#online-match-status.visible { display:block; }
+@media (max-width:700px){.online-actions{grid-template-columns:1fr}.online-panel{max-height:94vh;overflow:auto}.online-card{min-height:0}}
 .panel { position:relative;width:min(760px,95vw);max-height:94vh;overflow:auto;padding:42px;background:var(--panel);border:1px solid var(--line);box-shadow:0 24px 80px #000,inset 0 0 50px #0005; }
 .panel.wide { width:min(980px,95vw); }
 .panel h2 { font-size:36px;margin-bottom:28px; }

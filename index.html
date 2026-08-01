@@ -18,6 +18,7 @@
         <nav class="main-nav">
           <button id="new-game" class="menu-button primary">Новая игра <kbd>↵</kbd></button>
           <button id="quick-match" class="menu-button">Быстрый матч</button>
+          <button class="menu-button online-button" data-open="online-menu">Онлайн 1 на 1 <small>КОМНАТЫ</small></button>
           <button class="menu-button" data-open="mode-menu">Выбор режима <small id="mode-label">Закладка бомбы</small></button>
           <button class="menu-button" data-open="map-menu">Выбор карты <small>de_sandstorm2</small></button>
           <button class="menu-button" data-open="team-menu">Выбор команды <small id="team-label">Автовыбор</small></button>
@@ -28,6 +29,31 @@
           <button id="exit-button" class="menu-button danger">Выход</button>
         </nav>
         <footer class="menu-footer"><span>v1.0 LOCAL</span><span>ВСЕ РЕСУРСЫ СОЗДАНЫ ДЛЯ ПРОЕКТА</span></footer>
+      </section>
+
+      <section id="online-menu" class="screen panel-screen" aria-label="Онлайн-комната">
+        <div class="panel online-panel">
+          <button class="back-button" data-back>← Назад</button>
+          <p class="eyebrow">СЕТЕВОЙ МАТЧ</p><h2>Онлайн 1 на 1</h2>
+          <p class="lead">Создайте комнату и отправьте шестизначный код другу либо введите полученный код.</p>
+          <label class="online-name-label">Ваше имя<input id="online-name" maxlength="18" autocomplete="nickname" value="Игрок" /></label>
+          <div class="online-actions">
+            <div class="online-card">
+              <small>СОЗДАТЬ КОМНАТУ</small>
+              <strong id="online-room-code">— — — — — —</strong>
+              <div class="button-row"><button id="create-room" class="accent">Создать</button><button id="copy-room-code" class="secondary" disabled>Копировать код</button></div>
+              <p>Вы будете играть за террористов.</p>
+            </div>
+            <div class="online-card">
+              <small>ВОЙТИ В КОМНАТУ</small>
+              <input id="join-room-code" class="room-code-input" maxlength="6" inputmode="text" autocomplete="off" placeholder="ABC123" />
+              <button id="join-room" class="accent">Подключиться</button>
+              <p>Вы будете играть за спецназ.</p>
+            </div>
+          </div>
+          <div id="online-room-status" class="online-status" role="status">Создайте комнату или введите код друга</div>
+          <p class="online-note">Для подключения обоим игрокам нужен интернет. Комната рассчитана на двух игроков.</p>
+        </div>
       </section>
 
       <section id="team-menu" class="screen panel-screen" aria-label="Выбор команды">
@@ -121,6 +147,7 @@
           <canvas id="radar" width="190" height="190"></canvas>
           <div id="score-strip"><span id="attack-score">0</span><b id="round-timer">02:30</b><span id="defend-score">0</span><small id="round-label">РАУНД 1</small></div>
           <div id="killfeed"></div><div id="fps-counter"></div>
+          <div id="online-match-status"></div>
           <div id="crosshair"><i></i><i></i><i></i><i></i></div>
           <div id="scope-overlay" aria-hidden="true"><span></span></div>
           <div id="interaction"><span></span><progress max="1" value="0"></progress></div>
@@ -137,6 +164,7 @@
         <div id="death-screen"><div class="spectator-card"><strong>ВЫ ПОГИБЛИ</strong><span id="spectating">Наблюдение за союзником</span><small id="spectator-help">E — подключиться за бота · ESC — меню</small></div></div>
       </section>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
