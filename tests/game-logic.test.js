@@ -167,7 +167,7 @@ test('все боты, включая передового, закупают о�
   const defender=new Bot('Опора','defenders',scene,1);defender.money=3400;defender.spawn({x:0,z:0});
   assert.equal(defender.weapon,WEAPONS.famas);assert.equal(defender.defuseKit,true);assert.equal(defender.armor,100);
   assert.ok(defender.group.getObjectByName('weapon').scale.z>1);
-  assert.equal(attacker.group.getObjectByName('body').geometry.type,'CapsuleGeometry');assert.equal(attacker.group.getObjectByName('leg-left').geometry.type,'CapsuleGeometry');assert.ok(attacker.group.getObjectByName('upper-arm-left'));assert.ok(attacker.group.getObjectByName('sunglasses-left'));assert.ok(attacker.group.getObjectByName('chest-emblem'));
+  assert.equal(attacker.group.getObjectByName('body').geometry.type,'CapsuleGeometry');assert.equal(attacker.group.getObjectByName('body').castShadow,true);assert.equal(attacker.group.getObjectByName('leg-left').geometry.type,'CapsuleGeometry');assert.ok(attacker.group.getObjectByName('upper-arm-left'));assert.ok(attacker.group.getObjectByName('sunglasses-left'));assert.ok(attacker.group.getObjectByName('chest-emblem'));
   assert.equal(attacker.group.getObjectByName('body').userData.zone,'chest');assert.equal(attacker.group.getObjectByName('head').userData.zone,'head');assert.equal(attacker.group.getObjectByName('weapon-receiver').geometry.type,'CapsuleGeometry');
   attacker.dispose();defender.dispose();
 });
@@ -391,6 +391,12 @@ test('пистолеты не состоят из квадратных блок�
     assert.equal(manager.group.getObjectByName('receiver').geometry.userData.rounded,true,definition.id);assert.ok(manager.group.getObjectByName('ejection-port'),definition.id);
     if(definition.id==='usp')assert.ok(manager.group.getObjectByName('usp-suppressor'));if(definition.id==='elites')assert.ok(manager.group.getObjectByName('receiver-dual'));
   }
+});
+
+test('чёрный USP имеет длинный глушитель, узкий затвор и динамическую тень',()=>{
+  const manager=new WeaponManager(new THREE.Group(),{alive:true,velocity:new THREE.Vector3(),inventory:{active:new Firearm(WEAPONS.usp)}},{},{},{weapon:()=>({colors:[0xffffff,0xffffff]})});const receiver=manager.group.getObjectByName('receiver'),suppressor=manager.group.getObjectByName('usp-suppressor');
+  assert.equal(receiver.material.color.getHex(),0x202523);assert.equal(receiver.geometry.userData.rounded,true);assert.ok(manager.group.getObjectByName('usp-slide-lower'));assert.ok(manager.group.getObjectByName('usp-suppressor-collar'));assert.ok(manager.group.getObjectByName('usp-hammer'));
+  assert.ok(suppressor.geometry.parameters.height>=.75);assert.ok(suppressor.geometry.parameters.radialSegments>=24);assert.equal(suppressor.castShadow,true);assert.ok(manager.group.getObjectByName('muzzle').position.z<-1.4);
 });
 
 test('оптический прицел скрывает модель винтовки и включает режим перекрестия',()=>{

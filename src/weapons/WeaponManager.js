@@ -367,8 +367,9 @@ export class WeaponManager extends EventTarget {
   buildGun(definition) {
     const skin = this.skinManager.weapon(definition.id);
     const referenceAwp=definition.id==='awp';
-    const metal = new THREE.MeshStandardMaterial({ color: referenceAwp?0xe3e9b8:skin.colors[0], metalness: referenceAwp?.18:.58, roughness: referenceAwp?.56:.4 });
-    const dark = new THREE.MeshStandardMaterial({ color: referenceAwp?0x23271f:skin.colors[1], metalness: .2, roughness: .7 });
+    const referenceUsp=definition.id==='usp';
+    const metal = new THREE.MeshStandardMaterial({ color: referenceAwp?0xe3e9b8:referenceUsp?0x202523:skin.colors[0], metalness: referenceAwp?.18:referenceUsp?.65:.58, roughness: referenceAwp?.56:referenceUsp?.34:.4 });
+    const dark = new THREE.MeshStandardMaterial({ color: referenceAwp?0x23271f:referenceUsp?0x0e1110:skin.colors[1], metalness: referenceUsp?.35:.2, roughness: referenceUsp?.55:.7 });
     const wood = new THREE.MeshStandardMaterial({ color: definition.id === 'ak47' ? 0x75451f : skin.colors[1], metalness: .04, roughness: .78 });
     const detail = new THREE.MeshStandardMaterial({ color: 0x111412, metalness: .42, roughness: .54 });
     const glass = new THREE.MeshStandardMaterial({ color: 0x426b72, metalness: .18, roughness: .16, emissive: 0x071315 });
@@ -423,11 +424,27 @@ export class WeaponManager extends EventTarget {
         const trigger=new THREE.Mesh(new THREE.TorusGeometry(.055,.012,6,14,Math.PI*.72),metal);
         trigger.name=`${prefix}trigger`;trigger.rotation.set(0,Math.PI/2,Math.PI/2);trigger.position.set(x,-.14,-.2);this.group.add(trigger);
       };
-      if(definition.id==='elites'){buildPistol(-.15);buildPistol(.17,true);}else buildPistol(0);
       if(definition.id==='usp'){
-        addCylinder('usp-suppressor',[.07,.062],.48,[0,.045,-.92],detail,[Math.PI/2,0,0],20);
-        addCylinder('usp-suppressor-cap',[.073,.073],.045,[0,.045,-1.16],metal,[Math.PI/2,0,0],20);
-      }
+        addBox('receiver',[.255,.18,.64],[0,.07,-.34],metal,[0,0,0],.045);
+        addBox('usp-slide-lower',[.265,.075,.57],[0,-.045,-.31],dark,[0,0,0],.025);
+        addBox('pistol-frame',[.235,.13,.44],[0,-.12,-.24],dark,[0,0,0],.04);
+        addBox('grip',[.215,.52,.255],[0,-.36,-.015],dark,[-.18,0,0],.07);
+        addBox('grip-inlay',[.17,.36,.265],[0,-.365,-.01],detail,[-.18,0,0],.055);
+        for(let index=0;index<5;index++)addBox(`usp-grip-rib-${index}`,[.18,.018,.275],[0,-.22-index*.065,-.01],metal,[-.18,0,0],.006);
+        addCylinder('barrel',[.038,.043],.5,[0,.055,-.68],detail,[Math.PI/2,0,0],20);
+        addBox('front-sight',[.045,.065,.055],[0,.195,-.61],detail,[0,0,0],.012);
+        addBox('rear-sight',[.135,.055,.06],[0,.2,-.08],detail,[0,0,0],.012);
+        addBox('ejection-port',[.185,.02,.17],[0,.166,-.35],detail,[0,0,0],.008);
+        for(let index=0;index<5;index++)addBox(`slide-serration-${index}`,[.266,.025,.019],[0,.08,-.09-index*.038],detail,[0,0,0],.005);
+        const triggerGuard=new THREE.Mesh(new THREE.TorusGeometry(.105,.018,8,22,Math.PI),dark);triggerGuard.name='trigger-guard';triggerGuard.rotation.set(0,Math.PI/2,Math.PI/2);triggerGuard.position.set(0,-.17,-.2);this.group.add(triggerGuard);
+        const trigger=new THREE.Mesh(new THREE.TorusGeometry(.052,.012,7,16,Math.PI*.72),metal);trigger.name='trigger';trigger.rotation.set(0,Math.PI/2,Math.PI/2);trigger.position.set(0,-.165,-.2);this.group.add(trigger);
+        addBox('usp-hammer',[.09,.09,.065],[0,.14,.015],detail,[.18,0,0],.02);
+        addBox('usp-safety',[.035,.055,.12],[.145,.06,-.1],metal,[0,0,0],.012);
+        addCylinder('usp-suppressor',[.088,.097],.76,[0,.055,-1.01],dark,[Math.PI/2,0,0],28);
+        addCylinder('usp-suppressor-collar',[.105,.105],.075,[0,.055,-.65],metal,[Math.PI/2,0,0],24);
+        addCylinder('usp-suppressor-cap',[.09,.09],.04,[0,.055,-1.405],detail,[Math.PI/2,0,0],28);
+        addCylinder('usp-muzzle-opening',[.036,.036],.008,[0,.055,-1.428],new THREE.MeshBasicMaterial({color:0x020303}),[Math.PI/2,0,0],20);
+      }else if(definition.id==='elites'){buildPistol(-.15);buildPistol(.17,true);}else buildPistol(0);
       if(heavy){addBox('deagle-barrel-rib',[.28,.065,.42],[0,.18,-.48],detail,[0,0,0],.025);addCylinder('deagle-muzzle',[.075,.062],.13,[0,.045,-.98],metal,[Math.PI/2,0,0],20);}
     } else {
       addBox('receiver', [.3, .25, bodyLength], [0, .01, -bodyLength * .43], metal);
@@ -557,7 +574,7 @@ export class WeaponManager extends EventTarget {
     }
 
     const muzzle = new THREE.PointLight(0xffc16b, 0, 3);
-    muzzle.position.set(0, .04, referenceAwp?-2.36:-bodyLength-barrelLength);
+    muzzle.position.set(0, .04, referenceAwp?-2.36:referenceUsp?-1.44:-bodyLength-barrelLength);
     muzzle.name = 'muzzle';
     this.group.add(muzzle);
 
@@ -566,6 +583,7 @@ export class WeaponManager extends EventTarget {
     this.group.rotation.copy(baseRotation);
     this.group.position.set(referenceAwp?.3:.36, referenceAwp?-.36:-.32, referenceAwp?-.82:-.68);
     this.group.scale.setScalar(referenceAwp?.63:long ? .72 : pistol ? .86 : .78);
+    this.group.traverse((object)=>{if(object.isMesh&&!object.name.includes('decal')){object.castShadow=true;object.receiveShadow=false;}});
   }
 
   buildKnife(knife) {
