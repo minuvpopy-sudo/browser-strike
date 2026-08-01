@@ -113,7 +113,8 @@ export class BotAI {
     side.normalize();
     const previousX = this.bot.position.x; const previousZ = this.bot.position.z;
     const moved = this.collision.moveCircle(this.bot.position, { x: side.x * 3.15 * dt, z: side.z * 3.15 * dt }, .55);
-    this.bot.position.set(moved.x, 0, moved.z);
+    const groundY=this.collision.groundHeightAt?.(moved.x,moved.z)||0;if(groundY-this.bot.position.y>.75){moved.x=previousX;moved.z=previousZ;}
+    this.bot.position.set(moved.x, this.collision.groundHeightAt?.(moved.x,moved.z)||0, moved.z);
     this.bot.velocity.set((moved.x - previousX) / dt, 0, (moved.z - previousZ) / dt);
     if (moved.blockedX || moved.blockedZ) this.strafeSign *= -1;
   }

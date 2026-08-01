@@ -112,11 +112,26 @@ test('конструктор создаёт игровую карту с нав�
   assert.ok(graph.path(config.attackerSpawns[0],config.bombSites[0]).length>1);
 });
 
+test('рампа имеет наклонную физическую поверхность и поднимает игрока',()=>{
+  const map=createWorkshopMap();map.objects.push({id:'ramp-test',type:'ramp',x:0,z:0,w:7,d:14,h:6,direction:'north',material:'concrete'});
+  const config=workshopMapToConfig(map);const collision=new CollisionWorld(config);assert.equal(config.ramps.length,1);
+  assert.equal(collision.groundHeightAt(0,7),0);assert.equal(collision.groundHeightAt(0,-7),6);assert.equal(collision.groundHeightAt(0,0),3);
+  const player={alive:true,position:new THREE.Vector3(0,0,6),velocity:new THREE.Vector3(),inventory:{active:null}};
+  const input={action:name=>name==='forward',justPressed:()=>false};const movement=new PlayerMovement(player,collision,input);
+  for(let index=0;index<45;index++)movement.update(1/60,0,{autoBhop:false},{});
+  assert.ok(player.position.z<3);assert.ok(player.position.y>1);assert.equal(movement.grounded,true);
+});
+
+test('размер большой карты ограничен 480 и не создаёт чрезмерную навигационную сетку',()=>{
+  const map=createWorkshopMap({width:999,depth:999});const config=workshopMapToConfig(map);
+  assert.deepEqual(map.size,{width:480,depth:480});assert.ok(config.nodes.length<600);assert.ok(config.nodes.length>100);
+});
+
 test('файл мастерской безопасно проверяется, экспортируется и импортируется',()=>{
   const source=createWorkshopMap({name:'<b>Очень длинная пользовательская карта</b>'});
   source.objects.push({id:'huge',type:'crate',x:999,z:-999,w:999,d:999,h:999,material:'unknown'});
   const clean=sanitizeWorkshopMap(source);const imported=parseWorkshopMap(serializeWorkshopMap(clean));const object=imported.objects.at(-1);
-  assert.equal(imported.format,'browser-strike-map');assert.equal(imported.name.includes('<'),false);assert.ok(object.w<=80);assert.ok(object.h<=24);assert.equal(object.material,'wood');
+  assert.equal(imported.format,'browser-strike-map');assert.equal(imported.name.includes('<'),false);assert.ok(object.w<=120);assert.ok(object.h<=40);assert.equal(object.material,'wood');
   assert.throws(()=>parseWorkshopMap('{"format":"other"}'),/мастерской/);
 });
 

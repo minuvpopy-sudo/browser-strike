@@ -50,8 +50,11 @@ export class BotNavigation {
     const previousX = bot.position.x;
     const previousZ = bot.position.z;
     const moved = this.collision.moveCircle(bot.position, { x: direction.x * speed * dt, z: direction.z * speed * dt }, 0.55);
+    const groundY=this.collision.groundHeightAt?.(moved.x,moved.z)||0;
+    if(groundY-bot.position.y>.75){moved.x=previousX;moved.z=previousZ;}
     bot.position.x = moved.x;
     bot.position.z = moved.z;
+    bot.position.y = this.collision.groundHeightAt?.(moved.x,moved.z)||0;
     bot.velocity.set((moved.x - previousX) / dt, 0, (moved.z - previousZ) / dt);
 
     if (bot.position.distanceToSquared(this.lastPosition) < 0.025) this.stuck += dt;

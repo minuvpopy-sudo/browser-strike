@@ -68,11 +68,12 @@ kbd { font-size:10px;color:#dfe5b0;border:1px solid #849056;padding:2px 5px; }
 .builder-sidebar { min-height:0;overflow:auto;padding:16px;border:1px solid #435147;background:#0d1511;display:flex;flex-direction:column;gap:13px; }
 .builder-fields { display:grid;gap:9px; }.builder-fields.two{grid-template-columns:1fr 1fr}.builder-fields.three{grid-template-columns:1fr 1fr 1.2fr}.builder-fields.four{grid-template-columns:repeat(2,1fr)}
 .builder-fields input,.builder-fields select { width:100%;min-width:0;padding:8px;border:1px solid #46544a;background:#18231c;color:#eef3ea; }
+.ramp-direction-field { grid-column:1/-1; }
 .builder-caption { color:#cfe575;font-size:11px;letter-spacing:.13em;text-transform:uppercase;border-bottom:1px solid #344239;padding-bottom:6px; }
 .builder-tools { display:grid;grid-template-columns:repeat(4,1fr);gap:6px; }
 .builder-tools button { min-height:42px;padding:6px;border:1px solid #465349;background:#202a23;color:#bec9c0;cursor:pointer;font-size:11px; }
 .builder-tools button:hover,.builder-tools button.selected { color:#fff;border-color:var(--acid);background:#65752b; }
-.builder-object-actions,.builder-save-actions { justify-content:stretch; }.builder-object-actions button,.builder-save-actions button{flex:1;padding:10px 8px;border:1px solid #4b574d;background:#222a23;cursor:pointer;text-transform:uppercase;font-size:10px;font-weight:700}.builder-object-actions .danger{border-color:#7d4036;color:#ffafa0}
+.builder-object-actions,.builder-save-actions { justify-content:stretch;flex-wrap:wrap }.builder-object-actions button,.builder-save-actions button{flex:1;padding:10px 8px;border:1px solid #4b574d;background:#222a23;cursor:pointer;text-transform:uppercase;font-size:10px;font-weight:700}.builder-object-actions .danger{border-color:#7d4036;color:#ffafa0}
 .builder-main { min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px; }
 #builder-viewport { position:relative;flex:0 0 min(56vh,540px);min-height:330px;border:1px solid #536259;background:#17201b;overflow:hidden;cursor:crosshair; }
 #builder-viewport canvas { display:block;width:100%;height:100%; }

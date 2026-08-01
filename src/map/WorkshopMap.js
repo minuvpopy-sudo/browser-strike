@@ -1,5 +1,6 @@
 export const WORKSHOP_MAP_FORMAT = 'browser-strike-map';
-export const WORKSHOP_MAP_VERSION = 1;
+export const WORKSHOP_MAP_VERSION = 2;
+export const WORKSHOP_MAP_MAX_SIZE = 480;
 export const MAP_MATERIALS = Object.freeze({
   sandstone: 'Песчаник', brick: 'Кирпич', concrete: 'Бетон', metal: 'Металл',
   wood: 'Дерево', tech: 'Техно-панель', grass: 'Трава', ice: 'Лёд'
@@ -19,15 +20,16 @@ function sanitizePoint(point, size, fallback) {
 }
 
 function sanitizeObject(object, index, size) {
-  const type = object?.type === 'crate' ? 'crate' : 'wall';
-  const material = MAP_MATERIALS[object?.material] ? object.material : type === 'crate' ? 'wood' : 'sandstone';
+  const type = ['wall', 'crate', 'ramp'].includes(object?.type) ? object.type : 'wall';
+  const material = MAP_MATERIALS[object?.material] ? object.material : type === 'crate' ? 'wood' : type === 'ramp' ? 'concrete' : 'sandstone';
   const maxWidth = Math.max(2, size.width - 4), maxDepth = Math.max(2, size.depth - 4);
-  const w = clamp(object?.w, .8, Math.min(80, maxWidth), type === 'crate' ? 3 : 8);
-  const d = clamp(object?.d, .8, Math.min(80, maxDepth), type === 'crate' ? 3 : 2);
-  const h = clamp(object?.h, .5, 24, type === 'crate' ? 3 : 5);
+  const w = clamp(object?.w, .8, Math.min(120, maxWidth), type === 'crate' ? 3 : type === 'ramp' ? 7 : 8);
+  const d = clamp(object?.d, .8, Math.min(120, maxDepth), type === 'crate' ? 3 : type === 'ramp' ? 14 : 2);
+  const h = clamp(object?.h, .5, 40, type === 'crate' ? 3 : type === 'ramp' ? 6 : 5);
+  const direction = ['north', 'south', 'east', 'west'].includes(object?.direction) ? object.direction : 'north';
   return {
     id: cleanId(object?.id) || `object-${index + 1}`,
-    type, material,
+    type, material, ...(type === 'ramp' ? { direction } : {}),
     x: clamp(object?.x, -size.width / 2 + w / 2, size.width / 2 - w / 2, 0),
     z: clamp(object?.z, -size.depth / 2 + d / 2, size.depth / 2 - d / 2, 0),
     w, d, h
@@ -35,7 +37,7 @@ function sanitizeObject(object, index, size) {
 }
 
 export function createWorkshopMap({ name = 'Новая карта', author = 'Игрок', width = 96, depth = 96 } = {}) {
-  const size = { width: clamp(width, 40, 220, 96), depth: clamp(depth, 40, 220, 96) };
+  const size = { width: clamp(width, 40, WORKSHOP_MAP_MAX_SIZE, 96), depth: clamp(depth, 40, WORKSHOP_MAP_MAX_SIZE, 96) };
   const halfW = size.width / 2, halfD = size.depth / 2;
   return sanitizeWorkshopMap({
     format: WORKSHOP_MAP_FORMAT, version: WORKSHOP_MAP_VERSION, id: uid(), name, author, size, floorMaterial: 'concrete',
@@ -56,7 +58,7 @@ export function createWorkshopMap({ name = 'Новая карта', author = 'И
 
 export function sanitizeWorkshopMap(input) {
   if (!input || typeof input !== 'object') throw new Error('Файл карты повреждён');
-  const size = { width: clamp(input.size?.width, 40, 220, 96), depth: clamp(input.size?.depth, 40, 220, 96) };
+  const size = { width: clamp(input.size?.width, 40, WORKSHOP_MAP_MAX_SIZE, 96), depth: clamp(input.size?.depth, 40, WORKSHOP_MAP_MAX_SIZE, 96) };
   const attackerFallback = { x: -size.width / 2 + 10, z: size.depth / 2 - 10 };
   const defenderFallback = { x: size.width / 2 - 10, z: -size.depth / 2 + 10 };
   const sites = Array.isArray(input.bombSites) ? input.bombSites : [];
@@ -68,7 +70,7 @@ export function sanitizeWorkshopMap(input) {
     attackerSpawn: sanitizePoint(input.attackerSpawn, size, attackerFallback),
     defenderSpawn: sanitizePoint(input.defenderSpawn, size, defenderFallback),
     bombSites: ['A', 'B'].map((id, index) => ({ id, ...sanitizePoint(sites.find((site) => site?.id === id) || sites[index], size, siteFallbacks[index]), radius: clamp((sites.find((site) => site?.id === id) || sites[index])?.radius, 4, 14, 7) })),
-    objects: (Array.isArray(input.objects) ? input.objects : []).slice(0, 250).map((object, index) => sanitizeObject(object, index, size)),
+    objects: (Array.isArray(input.objects) ? input.objects : []).slice(0, 500).map((object, index) => sanitizeObject(object, index, size)),
     updatedAt: clamp(input.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now()) || Date.now()
   };
 }
@@ -85,7 +87,7 @@ const segmentBlocked = (a, b, boxes) => {
 
 function navigationFor(map, boxes) {
   const nodes = [];
-  const spacing = 12;
+  const spacing = Math.max(12, Math.ceil(Math.max(map.size.width, map.size.depth) / 22));
   let index = 0;
   for (let z = -map.size.depth / 2 + 5; z <= map.size.depth / 2 - 5; z += spacing) {
     for (let x = -map.size.width / 2 + 5; x <= map.size.width / 2 - 5; x += spacing) {
@@ -96,7 +98,7 @@ function navigationFor(map, boxes) {
   for (const node of special) if (!pointBlocked(node, boxes, .8)) nodes.push(node);
   const links = [];
   for (const node of nodes) {
-    const nearest = nodes.filter((other) => other !== node && !segmentBlocked(node, other, boxes)).sort((a, b) => Math.hypot(a.x - node.x, a.z - node.z) - Math.hypot(b.x - node.x, b.z - node.z)).slice(0, 4);
+    const nearest = nodes.filter((other) => other !== node && Math.hypot(other.x - node.x, other.z - node.z) <= spacing * 1.55 && !segmentBlocked(node, other, boxes));
     for (const other of nearest) {
       const link = [node.id, other.id];
       if (!links.some(([a, b]) => (a === link[0] && b === link[1]) || (a === link[1] && b === link[0]))) links.push(link);
@@ -114,10 +116,11 @@ export function workshopMapToConfig(input) {
   const map = sanitizeWorkshopMap(input);
   const walls = map.objects.filter((object) => object.type === 'wall').map((object) => ({ ...object, y: object.h / 2 }));
   const crates = map.objects.filter((object) => object.type === 'crate').map((object) => ({ ...object, y: object.h / 2 }));
+  const ramps = map.objects.filter((object) => object.type === 'ramp').map((object) => ({ ...object, y: object.h / 2 }));
   const { nodes, links } = navigationFor(map, [...walls, ...crates]);
   return {
     custom: true, sourceMapId: map.id, name: map.name, author: map.author, scale: 1, floorY: 0,
-    floorMaterial: map.floorMaterial, size: { ...map.size }, walls, crates, ramps: [],
+    floorMaterial: map.floorMaterial, size: { ...map.size }, walls, crates, ramps,
     attackerSpawns: spawnCluster(map.attackerSpawn, map.size), defenderSpawns: spawnCluster(map.defenderSpawn, map.size),
     buyZones: [{ team: 'attackers', ...map.attackerSpawn, radius: 12 }, { team: 'defenders', ...map.defenderSpawn, radius: 12 }],
     bombSites: map.bombSites.map((site) => ({ ...site })), nodes, links

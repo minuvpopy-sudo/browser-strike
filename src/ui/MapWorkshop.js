@@ -15,7 +15,7 @@ export class MapWorkshop extends EventTarget {
       viewport: document.getElementById('builder-viewport'), library: document.getElementById('workshop-library'), status: document.getElementById('builder-status'),
       name: document.getElementById('builder-map-name'), author: document.getElementById('builder-author'), floor: document.getElementById('builder-floor'),
       width: document.getElementById('builder-width'), depth: document.getElementById('builder-depth'), objectWidth: document.getElementById('builder-object-width'),
-      objectDepth: document.getElementById('builder-object-depth'), objectHeight: document.getElementById('builder-object-height'), material: document.getElementById('builder-material'),
+      objectDepth: document.getElementById('builder-object-depth'), objectHeight: document.getElementById('builder-object-height'), material: document.getElementById('builder-material'), rampDirection: document.getElementById('builder-ramp-direction'),
       importFile: document.getElementById('workshop-import-file')
     };
     for (const [id, label] of Object.entries(MAP_MATERIALS)) {
@@ -26,6 +26,7 @@ export class MapWorkshop extends EventTarget {
     document.getElementById('builder-save').addEventListener('click', () => this.save());
     document.getElementById('builder-export').addEventListener('click', () => this.exportMap(this.map));
     document.getElementById('builder-delete-object').addEventListener('click', () => this.deleteSelected());
+    document.getElementById('builder-clear-all').addEventListener('click', () => this.clearAll());
     document.getElementById('builder-update-object').addEventListener('click', () => this.updateSelected());
     document.getElementById('workshop-import').addEventListener('click', () => this.elements.importFile.click());
     this.elements.importFile.addEventListener('change', (event) => this.importFile(event.target.files?.[0]));
@@ -37,7 +38,7 @@ export class MapWorkshop extends EventTarget {
     try {
       this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });this.renderer.outputColorSpace = THREE.SRGBColorSpace;this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
       this.elements.viewport.append(this.renderer.domElement);this.scene = new THREE.Scene();this.scene.background = new THREE.Color(0x17201b);
-      this.camera = new THREE.PerspectiveCamera(48, 1, .1, 600);this.scene.add(new THREE.HemisphereLight(0xe6f1ff, 0x263128, 2.2));
+      this.camera = new THREE.PerspectiveCamera(48, 1, .1, 2000);this.scene.add(new THREE.HemisphereLight(0xe6f1ff, 0x263128, 2.2));
       const sun = new THREE.DirectionalLight(0xffe3ae, 3);sun.position.set(-30, 60, 25);this.scene.add(sun);this.scene.add(this.objectGroup);
       this.renderer.domElement.addEventListener('pointerdown', (event) => this.onPointerDown(event));
       this.renderer.domElement.addEventListener('pointermove', (event) => this.onPointerMove(event));
@@ -68,7 +69,8 @@ export class MapWorkshop extends EventTarget {
 
   selectTool(tool) {
     this.tool = tool;document.querySelectorAll('[data-builder-tool]').forEach((button) => button.classList.toggle('selected', button.dataset.builderTool === tool));
-    this.setStatus({ select: 'Выберите объект на карте', wall: 'Кликните по сетке, чтобы поставить стену', crate: 'Кликните по сетке, чтобы поставить ящик', attacker: 'Укажите появление террористов', defender: 'Укажите появление спецназа', siteA: 'Укажите центр точки A', siteB: 'Укажите центр точки B', erase: 'Кликните по объекту для удаления' }[tool] || 'Инструмент выбран');
+    if(tool==='ramp'&&!this.selectedId){this.elements.objectWidth.value=7;this.elements.objectDepth.value=14;this.elements.objectHeight.value=6;this.elements.material.value='concrete';}
+    this.setStatus({ select: 'Выберите объект на карте', wall: 'Кликните по сетке, чтобы поставить стену', crate: 'Кликните по сетке, чтобы поставить ящик', ramp: 'Кликните по сетке, чтобы поставить проходимую рампу', attacker: 'Укажите появление террористов', defender: 'Укажите появление спецназа', siteA: 'Укажите центр точки A', siteB: 'Укажите центр точки B', erase: 'Кликните по объекту для удаления' }[tool] || 'Инструмент выбран');
   }
 
   onPointerDown(event) {
@@ -78,8 +80,8 @@ export class MapWorkshop extends EventTarget {
     if (this.tool === 'erase') { if (hitObject) { this.map.objects = this.map.objects.filter((object) => object.id !== hitObject.userData.mapObjectId);this.selectedId = null;this.rebuildScene(); }return; }
     if (this.tool === 'select') { this.selectObject(hitObject?.userData?.mapObjectId || null);return; }
     const point = this.groundPoint(event);if (!point) return;const x = Math.round(point.x), z = Math.round(point.z);
-    if (this.tool === 'wall' || this.tool === 'crate') {
-      const object = { id: `object-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`, type: this.tool, x, z, w: Number(this.elements.objectWidth.value), d: Number(this.elements.objectDepth.value), h: Number(this.elements.objectHeight.value), material: this.elements.material.value };
+    if (['wall','crate','ramp'].includes(this.tool)) {
+      const object = { id: `object-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`, type: this.tool, x, z, w: Number(this.elements.objectWidth.value), d: Number(this.elements.objectDepth.value), h: Number(this.elements.objectHeight.value), material: this.elements.material.value, ...(this.tool==='ramp'?{direction:this.elements.rampDirection.value}:{}) };
       this.map = sanitizeWorkshopMap({ ...this.map, objects: [...this.map.objects, object] });this.selectedId = object.id;
     } else if (this.tool === 'attacker') this.map.attackerSpawn = { x, z };
     else if (this.tool === 'defender') this.map.defenderSpawn = { x, z };
@@ -95,17 +97,19 @@ export class MapWorkshop extends EventTarget {
 
   selectObject(id) {
     this.selectedId = id;const object = this.map.objects.find((item) => item.id === id);
-    if (object) { this.elements.objectWidth.value = object.w;this.elements.objectDepth.value = object.d;this.elements.objectHeight.value = object.h;this.elements.material.value = object.material;this.setStatus(`Выбран объект ${object.type === 'wall' ? '«стена»' : '«ящик»'}`); }
+    if (object) { this.elements.objectWidth.value = object.w;this.elements.objectDepth.value = object.d;this.elements.objectHeight.value = object.h;this.elements.material.value = object.material;if(object.type==='ramp')this.elements.rampDirection.value=object.direction;this.setStatus(`Выбран объект ${{wall:'«стена»',crate:'«ящик»',ramp:'«рампа»'}[object.type]}`); }
     this.rebuildScene();
   }
 
   updateSelected() {
     const object = this.map?.objects.find((item) => item.id === this.selectedId);if (!object) return this.setStatus('Сначала выберите стену или ящик', 'error');
-    Object.assign(object, { w: Number(this.elements.objectWidth.value), d: Number(this.elements.objectDepth.value), h: Number(this.elements.objectHeight.value), material: this.elements.material.value });
+    Object.assign(object, { w: Number(this.elements.objectWidth.value), d: Number(this.elements.objectDepth.value), h: Number(this.elements.objectHeight.value), material: this.elements.material.value, ...(object.type==='ramp'?{direction:this.elements.rampDirection.value}:{}) });
     this.map = sanitizeWorkshopMap(this.map);this.rebuildScene();this.setStatus('Размер и материал объекта обновлены', 'success');
   }
 
   deleteSelected() { if (!this.selectedId) return this.setStatus('Сначала выберите объект', 'error');this.map.objects = this.map.objects.filter((object) => object.id !== this.selectedId);this.selectedId = null;this.rebuildScene(); }
+
+  clearAll() { if (!this.map?.objects.length) return this.setStatus('Карта уже пустая');if (!globalThis.confirm?.('Удалить со сцены все стены, ящики и рампы?')) return;this.map = sanitizeWorkshopMap({ ...this.map, objects: [] });this.selectedId = null;this.rebuildScene();this.setStatus('Все объекты карты удалены', 'success'); }
 
   rebuildScene() {
     if (!this.scene || !this.map) return;
@@ -114,7 +118,7 @@ export class MapWorkshop extends EventTarget {
     const grid = new THREE.GridHelper(Math.max(this.map.size.width, this.map.size.depth), Math.round(Math.max(this.map.size.width, this.map.size.depth) / 4), 0x8eaa70, 0x405044);grid.position.y = .015;this.objectGroup.add(grid);
     for (const object of this.map.objects) {
       const material = new THREE.MeshStandardMaterial({ color: EDITOR_COLORS[object.material] || 0x888888, roughness: object.material === 'metal' || object.material === 'tech' ? .4 : .78, metalness: object.material === 'metal' || object.material === 'tech' ? .55 : .05, emissive: object.id === this.selectedId ? 0x38552a : 0x000000 });
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(object.w, object.h, object.d), material);mesh.position.set(object.x, object.h / 2, object.z);mesh.userData.mapObjectId = object.id;mesh.castShadow = mesh.receiveShadow = true;this.objectGroup.add(mesh);
+      let mesh;if(object.type==='ramp'){const alongX=object.direction==='east'||object.direction==='west';const run=alongX?object.w:object.d;const length=Math.hypot(run,object.h);mesh=new THREE.Mesh(new THREE.BoxGeometry(alongX?length:object.w,.28,alongX?object.d:length),material);const angle=Math.atan2(object.h,run);if(alongX)mesh.rotation.z=object.direction==='east'?angle:-angle;else mesh.rotation.x=object.direction==='north'?angle:-angle;}else mesh=new THREE.Mesh(new THREE.BoxGeometry(object.w, object.h, object.d), material);mesh.position.set(object.x, object.h / 2, object.z);mesh.userData.mapObjectId = object.id;mesh.castShadow = mesh.receiveShadow = true;this.objectGroup.add(mesh);
     }
     this.addMarker(this.map.attackerSpawn, 0xe59b43, 'T');this.addMarker(this.map.defenderSpawn, 0x4aa6d8, 'CT');
     for (const site of this.map.bombSites) this.addMarker(site, site.id === 'A' ? 0xe26043 : 0xe4b248, site.id, true);
