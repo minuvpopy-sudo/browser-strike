@@ -25,7 +25,7 @@ import { KNIFE_SKINS } from '../src/skins/KnifeSkinDefinitions.js';
 import { animateKnifeWaves, collectKnifeWaveMaterials, createKnifeBladeMaterial, disposeKnifeMaterial } from '../src/skins/KnifeMaterial.js';
 import { SkinPreview } from '../src/skins/SkinPreview.js';
 import { PlayerInventory } from '../src/player/PlayerInventory.js';
-import { PlayerMovement } from '../src/player/PlayerMovement.js';
+import { BHOP_MAX_CHAIN, PlayerMovement, bhopSpeedMultiplier } from '../src/player/PlayerMovement.js';
 import { AutoUpdater, versionedPageUrl } from '../src/core/AutoUpdater.js';
 import { selectSpectatorTarget, takeOverBotState } from '../src/core/SpectatorMode.js';
 import { SHOT_PROFILES, SHOT_SAMPLES, shotProfile, spatialShotMix } from '../src/core/AudioManager.js';
@@ -247,6 +247,15 @@ test('столкновение со стеной гасит скорость п�
   assert.equal(player.velocity.x,0);assert.ok(player.position.x>=0);
 });
 
+test('последовательные банихоп-прыжки плавно ускоряют игрока до безопасного лимита',()=>{
+  assert.ok(bhopSpeedMultiplier(3)>bhopSpeedMultiplier(1));assert.equal(bhopSpeedMultiplier(999),bhopSpeedMultiplier(BHOP_MAX_CHAIN));
+  const player={alive:true,position:new THREE.Vector3(),velocity:new THREE.Vector3(),inventory:{active:null}};
+  const collision={findMantle:()=>null,groundHeightAt:()=>0,moveCircle:(position,delta)=>({x:position.x+delta.x,z:position.z+delta.z,blockedX:false,blockedZ:false})};
+  const input={action:name=>name==='forward'||name==='jump',justPressed:()=>false};const movement=new PlayerMovement(player,collision,input);
+  let fastest=0;for(let frame=0;frame<420;frame++){movement.update(1/60,0,{autoBhop:true},{});fastest=Math.max(fastest,movement.speed);}
+  assert.ok(movement.bhopChain>=2);assert.ok(fastest>7.7);assert.ok(fastest<=7.2*bhopSpeedMultiplier(BHOP_MAX_CHAIN)+.001);
+});
+
 test('единичный скачок мыши не разворачивает камеру',()=>{
   const originalDocument=globalThis.document;const element={};globalThis.document={pointerLockElement:element};
   try{
@@ -464,6 +473,7 @@ test('керамбит имеет кольцо, изогнутый клинок 
   const manager=new WeaponManager(camera,player,{}, {}, {knifeStyle:()=>({blade:0xcccccc,handle:0x222222})});
   const pivot=manager.group.getObjectByName('karambit-pivot');const ring=manager.group.getObjectByName('karambit-ring');const blade=manager.group.getObjectByName('karambit-blade');
   assert.ok(pivot);assert.ok(ring);assert.ok(blade);assert.ok(manager.group.getObjectByName('karambit-handle'));assert.ok(manager.group.getObjectByName('karambit-edge'));
+  const handle=manager.group.getObjectByName('karambit-handle');assert.equal(handle.geometry.parameters.shapes.holes.length,3);assert.equal(manager.group.getObjectsByProperty('name','karambit-handle-hole-rim').length,3);
   blade.geometry.computeBoundingBox();const bladeSize=new THREE.Vector3();blade.geometry.boundingBox.getSize(bladeSize);
   assert.ok(bladeSize.y>1.7);assert.ok(bladeSize.x>1.1);assert.ok(ring.geometry.parameters.radius>=.2);assert.ok(Math.abs(ring.rotation.x-Math.PI/2)<.001);assert.ok(pivot.position.z>.9);
   manager.drawTime=0;knife.inspecting=2;manager.update(.08);

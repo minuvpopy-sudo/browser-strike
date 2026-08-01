@@ -69,54 +69,56 @@ export class SkinPreview {
 
     if (this.type === 'karambit') {
       const bladeShape = new THREE.Shape();
-      bladeShape.moveTo(-.12, -.02);
-      bladeShape.bezierCurveTo(.15, -.85, 1.1, -1.32, 1.95, -1.05);
-      bladeShape.bezierCurveTo(2.3, -.95, 2.6, -.65, 2.75, -.28);
-      bladeShape.bezierCurveTo(2.4, -.42, 2.05, -.43, 1.73, -.18);
-      bladeShape.bezierCurveTo(1.26, .22, .78, .55, .15, .56);
-      bladeShape.lineTo(-.1, .36);
+      bladeShape.moveTo(-.08, .06);
+      bladeShape.bezierCurveTo(.48, .43, 1.08, .45, 1.58, .15);
+      bladeShape.bezierCurveTo(2.13, -.17, 2.55, -.73, 2.77, -1.38);
+      bladeShape.bezierCurveTo(2.42, -1.13, 2.04, -.78, 1.7, -.44);
+      bladeShape.bezierCurveTo(1.22, .02, .68, .12, .12, -.16);
+      bladeShape.lineTo(-.1, -.06);
       bladeShape.closePath();
       const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: .1, curveSegments: 12, bevelEnabled: true, bevelThickness: .03, bevelSize: .022, bevelSegments: 2 }), bladeMaterial);
       blade.name = 'karambit-preview-blade';
       this.group.add(blade);
 
       const edgeCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(-.07, .38, .145), new THREE.Vector3(.4, .52, .145),
-        new THREE.Vector3(.84, .46, .145), new THREE.Vector3(1.3, .16, .145),
-        new THREE.Vector3(1.73, -.18, .145), new THREE.Vector3(2.18, -.4, .145),
-        new THREE.Vector3(2.7, -.29, .145)
+        new THREE.Vector3(.1, -.14, .145), new THREE.Vector3(.58, .09, .145),
+        new THREE.Vector3(1.08, .04, .145), new THREE.Vector3(1.52, -.33, .145),
+        new THREE.Vector3(1.9, -.7, .145), new THREE.Vector3(2.3, -1.03, .145),
+        new THREE.Vector3(2.72, -1.36, .145)
       ]);
       const edge = new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 28, .025, 6, false), new THREE.MeshStandardMaterial({ color: 0xd8e5e9, metalness: .96, roughness: .12 }));
       edge.name = 'karambit-preview-edge';
       this.group.add(edge);
 
       const handleShape = new THREE.Shape();
-      handleShape.moveTo(-.08, -.08);
-      handleShape.quadraticCurveTo(-.76, -.28, -1.5, -.1);
-      handleShape.quadraticCurveTo(-1.66, .13, -1.48, .42);
-      handleShape.quadraticCurveTo(-.75, .62, -.1, .42);
-      handleShape.lineTo(.04, .25);
-      handleShape.lineTo(.02, .05);
+      handleShape.moveTo(-.08, -.16);
+      handleShape.quadraticCurveTo(-.48, -.34, -.77, -.24);
+      handleShape.quadraticCurveTo(-1.12, -.38, -1.5, -.17);
+      handleShape.quadraticCurveTo(-1.7, .12, -1.51, .44);
+      handleShape.quadraticCurveTo(-.78, .66, -.08, .43);
+      handleShape.lineTo(.06, .23);
+      handleShape.lineTo(.04, .02);
       handleShape.closePath();
+      for (const x of [-1.22, -.8, -.38]) {
+        const hole = new THREE.Path();
+        hole.absellipse(x, .12, .13, .16, 0, Math.PI * 2, false, 0);
+        handleShape.holes.push(hole);
+      }
       const handle = new THREE.Mesh(new THREE.ExtrudeGeometry(handleShape, { depth: .24, curveSegments: 8, bevelEnabled: true, bevelThickness: .028, bevelSize: .022, bevelSegments: 2 }), gripMaterial);
       handle.name = 'karambit-preview-handle';
       handle.position.z = -.07;
       this.group.add(handle);
 
-      const inlay = new THREE.Mesh(new THREE.BoxGeometry(1.05, .16, .12), new THREE.MeshStandardMaterial({ color: new THREE.Color(style.handle).multiplyScalar(.5), metalness: .1, roughness: .85, flatShading: true }));
-      inlay.position.set(-.78, .17, .18);
-      inlay.rotation.z = -.02;
-      this.group.add(inlay);
-
-      for (const x of [-.38, -.8, -1.2]) {
-        const pin = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, .3, 10), detailMaterial);
-        pin.rotation.x = Math.PI / 2;
-        pin.position.set(x, .17, .05);
-        this.group.add(pin);
+      const rimMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(style.handle).multiplyScalar(.5), metalness: .1, roughness: .85, flatShading: true });
+      for (const x of [-1.22, -.8, -.38]) {
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(.145, .022, 7, 20), rimMaterial);
+        rim.name = 'karambit-preview-handle-hole-rim';
+        rim.position.set(x, .12, .19);
+        this.group.add(rim);
       }
 
       const ring = new THREE.Mesh(new THREE.TorusGeometry(.31, .09, 9, 28), gripMaterial);
-      ring.position.set(-1.72, .15, .05);
+      ring.position.set(-1.82, .14, .05);
       ring.name = 'karambit-preview-ring';
       this.group.add(ring);
       const ringLiner = new THREE.Mesh(new THREE.TorusGeometry(.215, .025, 7, 24), detailMaterial);

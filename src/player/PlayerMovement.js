@@ -2,9 +2,16 @@ import * as THREE from 'three';
 
 const smoothstep = (value) => value * value * (3 - 2 * value);
 
+export const BHOP_MAX_CHAIN = 6;
+export const BHOP_CHAIN_GAIN = .075;
+
+export function bhopSpeedMultiplier(chain) {
+  return 1 + THREE.MathUtils.clamp(Math.floor(Number(chain) || 0), 0, BHOP_MAX_CHAIN) * BHOP_CHAIN_GAIN;
+}
+
 export class PlayerMovement {
   constructor(player, collision, input) {
-    this.player = player;this.collision = collision;this.input = input;this.grounded = true;this.crouched = false;this.bob = 0;this.landing = 0;this.speed = 0;this.mantle = null;
+    this.player = player;this.collision = collision;this.input = input;this.grounded = true;this.crouched = false;this.bob = 0;this.landing = 0;this.speed = 0;this.mantle = null;this.bhopChain = 0;this.groundContactTime = 0;
   }
 
   update(dt, yaw, settings, audio) {
@@ -30,15 +37,39 @@ export class PlayerMovement {
     const walking = this.input.action('walk');
     let maxSpeed = this.crouched ? 3.2 : walking ? 4.2 : 7.2;
     maxSpeed *= this.player.inventory.active?.definition?.moveSpeed || 1;
+    const jumpPressed = settings.autoBhop ? this.input.action('jump') : this.input.justPressed('jump');
+    const wantsGroundJump = jumpPressed && this.grounded && !this.crouched;
     const horizontal = new THREE.Vector3(this.player.velocity.x, 0, this.player.velocity.z);
     const target = wish.multiplyScalar(maxSpeed);
-    const accel = this.grounded ? 16 : 3.4;
-    horizontal.lerp(target, Math.min(1, accel * dt));
-    if (forward === 0 && side === 0 && this.grounded) horizontal.multiplyScalar(Math.max(0, 1 - 9 * dt));
+    if (this.grounded) {
+      this.groundContactTime += dt;
+      if (wantsGroundJump) {
+        const chained = this.landing > 0 && horizontal.length() > maxSpeed * .62;
+        this.bhopChain = chained ? Math.min(BHOP_MAX_CHAIN, this.bhopChain + 1) : 0;
+        const speedLimit = maxSpeed * bhopSpeedMultiplier(this.bhopChain);
+        if (wishDirection.lengthSq() > 0) {
+          if (horizontal.length() < maxSpeed) horizontal.lerp(target, Math.min(1, 16 * dt));
+          if (chained) horizontal.addScaledVector(wishDirection, maxSpeed * .085);
+          horizontal.clampLength(0, speedLimit);
+        }
+      } else {
+        horizontal.lerp(target, Math.min(1, 16 * dt));
+        if (forward === 0 && side === 0) horizontal.multiplyScalar(Math.max(0, 1 - 9 * dt));
+        if (this.groundContactTime > .24) this.bhopChain = 0;
+      }
+    } else {
+      this.groundContactTime = 0;
+      const speedLimit = maxSpeed * bhopSpeedMultiplier(this.bhopChain);
+      if (wishDirection.lengthSq() > 0) {
+        const currentAlongWish = horizontal.dot(wishDirection);
+        const addSpeed = THREE.MathUtils.clamp(maxSpeed - currentAlongWish, 0, maxSpeed * 3.6 * dt);
+        horizontal.addScaledVector(wishDirection, addSpeed);
+      }
+      horizontal.clampLength(0, speedLimit);
+    }
     this.player.velocity.x = horizontal.x;this.player.velocity.z = horizontal.z;
 
     const startedGrounded = this.grounded;
-    const jumpPressed = settings.autoBhop ? this.input.action('jump') : this.input.justPressed('jump');
     let jumped = false;
     if (jumpPressed && this.grounded && !this.crouched) {
       const mantleTarget = this.collision.findMantle?.(this.player.position, wishDirection, .58, 6.2);
@@ -46,7 +77,7 @@ export class PlayerMovement {
         this.mantle = { start: this.player.position.clone(), target: mantleTarget, elapsed: 0, duration: THREE.MathUtils.clamp(.2 + mantleTarget.rise * .035, .22, .42) };
         this.grounded = false;this.player.velocity.set(0, 0, 0);audio?.tone?.('steps', { frequency: 95, endFrequency: 58, gain: .018, duration: .08 });return;
       }
-      this.player.velocity.y = 6.1;this.grounded = false;jumped = true;
+      this.player.velocity.y = 6.1;this.grounded = false;this.groundContactTime = 0;jumped = true;
     }
 
     this.player.velocity.y -= 17.5 * dt;
@@ -67,7 +98,7 @@ export class PlayerMovement {
     }
     const canFollowSlope = startedGrounded && !jumped && Math.abs(groundY - this.player.position.y) <= .65;
     if (canFollowSlope || nextY <= groundY) {
-      nextY = groundY;this.player.velocity.y = 0;this.grounded = true;if (wasAir && !canFollowSlope) this.landing = .12;
+      nextY = groundY;this.player.velocity.y = 0;this.grounded = true;if (wasAir && !canFollowSlope) { this.landing = .12;this.groundContactTime = 0; }
     } else this.grounded = false;
     this.player.position.y = nextY;this.player.position.x = moved.x;this.player.position.z = moved.z;
     if (moved.blockedX) this.player.velocity.x = 0;if (moved.blockedZ) this.player.velocity.z = 0;
