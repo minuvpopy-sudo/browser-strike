@@ -73,6 +73,16 @@ kbd { font-size:10px;color:#dfe5b0;border:1px solid #849056;padding:2px 5px; }
 .builder-tools { display:grid;grid-template-columns:repeat(4,1fr);gap:6px; }
 .builder-tools button { min-height:42px;padding:6px;border:1px solid #465349;background:#202a23;color:#bec9c0;cursor:pointer;font-size:11px; }
 .builder-tools button:hover,.builder-tools button.selected { color:#fff;border-color:var(--acid);background:#65752b; }
+.builder-property-tabs { display:grid;grid-template-columns:1fr 1fr;gap:6px; }
+.builder-property-tabs button { padding:9px 8px;border:1px solid #465349;background:#18211b;color:#aab6ad;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase; }
+.builder-property-tabs button:hover,.builder-property-tabs button.selected { color:#fff;border-color:var(--acid);background:#596a29; }
+.builder-property-page { display:none;flex-direction:column;gap:12px; }
+.builder-property-page.active { display:flex; }
+.builder-texture-help { margin:0;color:#9ba89e;font-size:11px;line-height:1.45; }
+.builder-texture-palette { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-height:330px;overflow:auto;padding-right:3px; }
+.builder-texture-option { position:relative;min-height:74px;padding:0;border:2px solid #3e4a42;background-color:#667068;background-repeat:no-repeat;cursor:pointer;overflow:hidden; }
+.builder-texture-option:hover,.builder-texture-option.selected { border-color:#d2ec72;box-shadow:inset 0 0 0 2px #172015,0 0 10px #badb5233; }
+.builder-texture-option span { position:absolute;inset:auto 0 0;padding:5px 4px;background:#0b100ddd;color:#fff;font-size:9px;font-weight:700;line-height:1.15;text-align:center;text-transform:uppercase; }
 .builder-object-actions,.builder-save-actions { justify-content:stretch;flex-wrap:wrap }.builder-object-actions button,.builder-save-actions button{flex:1;padding:10px 8px;border:1px solid #4b574d;background:#222a23;cursor:pointer;text-transform:uppercase;font-size:10px;font-weight:700}.builder-object-actions .danger{border-color:#7d4036;color:#ffafa0}
 .builder-main { min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px; }
 #builder-viewport { position:relative;flex:0 0 min(56vh,540px);min-height:330px;border:1px solid #536259;background:#17201b;overflow:hidden;cursor:crosshair; }

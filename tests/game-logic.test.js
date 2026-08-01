@@ -33,6 +33,7 @@ import { cleanPlayerName, createRoomCode, normalizeRoomCode, roomPeerId } from '
 import { RemotePlayer } from '../src/network/RemotePlayer.js';
 import { WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../src/map/WorkshopMap.js';
 import { MATERIAL_ATLAS_CELLS } from '../src/map/MaterialLibrary.js';
+import { MapWorkshop } from '../src/ui/MapWorkshop.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -62,6 +63,11 @@ test('сложность ботов меняет реакцию, точност�
 
 test('атлас содержит новые текстуры для карты и мастерской',()=>{
   for(const material of ['darkConcrete','plaster','whiteBrick','redBand','blueMetal','masonry','asphalt','tile','dust'])assert.ok(MATERIAL_ATLAS_CELLS[material]);
+});
+
+test('вкладка текстур применяет один выбранный материал к стене',()=>{
+  const workshop=Object.create(MapWorkshop.prototype);workshop.map=createWorkshopMap();workshop.selectedId='cover-center-a';workshop.elements={material:{value:''}};workshop.rebuildScene=()=>{};workshop.setStatus=()=>{};workshop.syncTextureSelection=()=>{};
+  workshop.applyTexture('redBand');assert.equal(workshop.elements.material.value,'redBand');assert.equal(workshop.map.objects.find((object)=>object.id==='cover-center-a').material,'redBand');
 });
 
 test('боеприпасы не уходят ниже нуля, перезарядка переносит патроны',()=>{

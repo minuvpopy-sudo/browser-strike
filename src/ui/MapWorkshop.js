@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { MAP_MATERIALS, WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../map/WorkshopMap.js';
-import { createAtlasMaterials } from '../map/MaterialLibrary.js';
+import { MATERIAL_ATLAS_CELLS, MATERIAL_ATLAS_URL, createAtlasMaterials } from '../map/MaterialLibrary.js';
 
 export class MapWorkshop extends EventTarget {
   constructor({ storage = globalThis.localStorage } = {}) {
@@ -15,12 +15,13 @@ export class MapWorkshop extends EventTarget {
       name: document.getElementById('builder-map-name'), author: document.getElementById('builder-author'), floor: document.getElementById('builder-floor'),
       width: document.getElementById('builder-width'), depth: document.getElementById('builder-depth'), objectWidth: document.getElementById('builder-object-width'),
       objectDepth: document.getElementById('builder-object-depth'), objectHeight: document.getElementById('builder-object-height'), material: document.getElementById('builder-material'), rampDirection: document.getElementById('builder-ramp-direction'),
-      importFile: document.getElementById('workshop-import-file')
+      importFile: document.getElementById('workshop-import-file'), texturePalette: document.getElementById('builder-texture-palette')
     };
     for (const [id, label] of Object.entries(MAP_MATERIALS)) {
       for (const select of [this.elements.floor, this.elements.material]) { const option = document.createElement('option');option.value = id;option.textContent = label;select.append(option); }
     }
     document.querySelectorAll('[data-builder-tool]').forEach((button) => button.addEventListener('click', () => this.selectTool(button.dataset.builderTool)));
+    document.querySelectorAll('[data-builder-property-tab]').forEach((button) => button.addEventListener('click', () => this.selectPropertyTab(button.dataset.builderPropertyTab)));
     document.getElementById('builder-new').addEventListener('click', () => this.newMap());
     document.getElementById('builder-save').addEventListener('click', () => this.save());
     document.getElementById('builder-export').addEventListener('click', () => this.exportMap(this.map));
@@ -30,6 +31,7 @@ export class MapWorkshop extends EventTarget {
     document.getElementById('workshop-import').addEventListener('click', () => this.elements.importFile.click());
     this.elements.importFile.addEventListener('change', (event) => this.importFile(event.target.files?.[0]));
     for (const element of [this.elements.name, this.elements.author, this.elements.floor, this.elements.width, this.elements.depth]) element.addEventListener('change', () => this.updateMapFields());
+    this.elements.material.addEventListener('change',()=>this.syncTextureSelection());
     this.setupRenderer();this.renderLibrary();this.newMap(false);return this;
   }
 
@@ -52,7 +54,37 @@ export class MapWorkshop extends EventTarget {
     this.active = id === 'workshop-menu';
     if (!this.active) { this.renderer?.setAnimationLoop(null);return; }
     if (!this.materialLibrary) { this.materialLibrary=createAtlasMaterials({anisotropy:4});this.editorMaterials=this.materialLibrary.materials; }
-    this.resize();this.renderLibrary();this.rebuildScene();this.renderWorkshop??=()=>this.renderer.render(this.scene,this.camera);this.renderer.setAnimationLoop(this.renderWorkshop);
+    this.buildTexturePalette();this.resize();this.renderLibrary();this.rebuildScene();this.renderWorkshop??=()=>this.renderer.render(this.scene,this.camera);this.renderer.setAnimationLoop(this.renderWorkshop);
+  }
+
+  selectPropertyTab(tab) {
+    document.querySelectorAll('[data-builder-property-tab]').forEach((button)=>button.classList.toggle('selected',button.dataset.builderPropertyTab===tab));
+    document.querySelectorAll('[data-builder-property-page]').forEach((page)=>page.classList.toggle('active',page.dataset.builderPropertyPage===tab));
+    if(tab==='textures')this.syncTextureSelection();
+  }
+
+  buildTexturePalette() {
+    if(this.texturePaletteBuilt||!this.elements.texturePalette)return;this.texturePaletteBuilt=true;
+    const backgroundPosition=(index)=>`${index/3*100}%`;
+    for(const [id,label] of Object.entries(MAP_MATERIALS)){
+      const cell=MATERIAL_ATLAS_CELLS[id]||MATERIAL_ATLAS_CELLS.sandstone;const button=document.createElement('button');button.type='button';button.className='builder-texture-option';button.dataset.material=id;button.title=label;button.setAttribute('aria-label',label);
+      button.style.backgroundImage=`url("${MATERIAL_ATLAS_URL}")`;button.style.backgroundSize='400% 400%';button.style.backgroundPosition=`${backgroundPosition(cell[0])} ${backgroundPosition(cell[1])}`;
+      const caption=document.createElement('span');caption.textContent=label;button.append(caption);button.addEventListener('click',()=>this.applyTexture(id));this.elements.texturePalette.append(button);
+    }
+    this.syncTextureSelection();
+  }
+
+  applyTexture(material) {
+    if(!MAP_MATERIALS[material])return;this.elements.material.value=material;
+    const object=this.map?.objects.find((item)=>item.id===this.selectedId);
+    if(object){object.material=material;this.map=sanitizeWorkshopMap(this.map);this.rebuildScene();this.setStatus(`Текстура «${MAP_MATERIALS[material]}» применена к выбранному объекту`,'success');}
+    else this.setStatus(`Текстура «${MAP_MATERIALS[material]}» выбрана для новых стен`,'success');
+    this.syncTextureSelection();
+  }
+
+  syncTextureSelection() {
+    const material=this.map?.objects.find((item)=>item.id===this.selectedId)?.material||this.elements?.material?.value;
+    this.elements?.texturePalette?.querySelectorAll('[data-material]').forEach((button)=>button.classList.toggle('selected',button.dataset.material===material));
   }
 
   newMap(showStatus = true) {
@@ -102,6 +134,7 @@ export class MapWorkshop extends EventTarget {
   selectObject(id) {
     this.selectedId = id;const object = this.map.objects.find((item) => item.id === id);
     if (object) { this.elements.objectWidth.value = object.w;this.elements.objectDepth.value = object.d;this.elements.objectHeight.value = object.h;this.elements.material.value = object.material;if(object.type==='ramp')this.elements.rampDirection.value=object.direction;this.setStatus(`Выбран объект ${{wall:'«стена»',crate:'«ящик»',ramp:'«рампа»'}[object.type]}`); }
+    this.syncTextureSelection();
     this.rebuildScene();
   }
 

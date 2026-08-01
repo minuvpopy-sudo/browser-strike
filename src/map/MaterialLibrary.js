@@ -27,30 +27,24 @@ function atlasMaterial(texture, id, cell) {
   });
   const [column, row] = cell;
   material.userData.atlasCell = { column, row };
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.atlasOffset = { value: new THREE.Vector2(column * .25, (3 - row) * .25) };
-    shader.uniforms.atlasScale = { value: new THREE.Vector2(.25, .25) };
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <map_pars_fragment>', '#include <map_pars_fragment>\nuniform vec2 atlasOffset;\nuniform vec2 atlasScale;')
-      .replace('texture2D( map, vMapUv )', 'texture2D( map, atlasOffset + clamp( vMapUv, vec2( 0.008 ), vec2( 0.992 ) ) * atlasScale )');
-  };
-  material.customProgramCacheKey = () => `browser-strike-atlas-${column}-${row}`;
   return material;
 }
 
 export function createAtlasMaterials({ anisotropy = 4 } = {}) {
-  const texture = new THREE.TextureLoader().load(MATERIAL_ATLAS_URL);
-  texture.name = 'workshop-material-atlas';
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.anisotropy = anisotropy;
-  const materials = Object.fromEntries(Object.entries(MATERIAL_ATLAS_CELLS).map(([id, cell]) => [id, atlasMaterial(texture, id, cell)]));
-  return { texture, materials };
+  const source = document.createElement('img');source.decoding='async';const tiles=new Map();const materials={};
+  for(const [id,cell] of Object.entries(MATERIAL_ATLAS_CELLS)){
+    const key=cell.join(':');let tile=tiles.get(key);
+    if(!tile){const canvas=document.createElement('canvas');canvas.width=canvas.height=256;const context=canvas.getContext('2d');context.fillStyle='#77736b';context.fillRect(0,0,256,256);const texture=new THREE.CanvasTexture(canvas);texture.name=`workshop-material-${key}`;texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;texture.anisotropy=anisotropy;tile={cell,context,texture};tiles.set(key,tile);}
+    materials[id]=atlasMaterial(tile.texture,id,cell);
+  }
+  source.addEventListener('load',()=>{const width=source.naturalWidth/4,height=source.naturalHeight/4;for(const {cell,context,texture} of tiles.values()){context.clearRect(0,0,256,256);context.drawImage(source,cell[0]*width,cell[1]*height,width,height,0,0,256,256);texture.needsUpdate=true;}});
+  source.src=MATERIAL_ATLAS_URL;
+  return { source, textures:[...tiles.values()].map((tile)=>tile.texture), materials };
 }
 
 export function disposeAtlasMaterials(library) {
   if (!library) return;
   for (const material of new Set(Object.values(library.materials || {}))) material.dispose();
-  library.texture?.dispose();
+  for(const texture of library.textures||[])texture.dispose();
+  if(library.source)library.source.src='';
 }

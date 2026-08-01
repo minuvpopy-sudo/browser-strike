@@ -99,9 +99,16 @@
                 <button class="selected" data-builder-tool="select">Выбор</button><button data-builder-tool="wall">Стена</button><button data-builder-tool="crate">Ящик</button><button data-builder-tool="ramp">Рампа</button><button data-builder-tool="erase">Ластик</button>
                 <button data-builder-tool="attacker">Точка T</button><button data-builder-tool="defender">Точка CT</button><button data-builder-tool="siteA">Плэнт A</button><button data-builder-tool="siteB">Плэнт B</button>
               </div>
-              <strong class="builder-caption">3D-объект</strong>
-              <div class="builder-fields four"><label>Шир.<input id="builder-object-width" type="number" min="0.8" max="120" step="0.5" value="8" /></label><label>Глуб.<input id="builder-object-depth" type="number" min="0.8" max="120" step="0.5" value="2" /></label><label>Выс.<input id="builder-object-height" type="number" min="0.5" max="40" step="0.5" value="5" /></label><label>Текстура<select id="builder-material"></select></label><label class="ramp-direction-field">Подъём рампы<select id="builder-ramp-direction"><option value="north">↑ Север</option><option value="south">↓ Юг</option><option value="east">→ Восток</option><option value="west">← Запад</option></select></label></div>
-              <div class="button-row builder-object-actions"><button id="builder-update-object" class="secondary">Применить</button><button id="builder-delete-object" class="danger">Удалить объект</button><button id="builder-clear-all" class="danger">Очистить всё</button></div>
+              <div class="builder-property-tabs" role="tablist" aria-label="Свойства объекта"><button class="selected" data-builder-property-tab="object">Объект</button><button data-builder-property-tab="textures">Текстуры</button></div>
+              <div class="builder-property-page active" data-builder-property-page="object">
+                <strong class="builder-caption">3D-объект</strong>
+                <div class="builder-fields four"><label>Шир.<input id="builder-object-width" type="number" min="0.8" max="120" step="0.5" value="8" /></label><label>Глуб.<input id="builder-object-depth" type="number" min="0.8" max="120" step="0.5" value="2" /></label><label>Выс.<input id="builder-object-height" type="number" min="0.5" max="40" step="0.5" value="5" /></label><label>Текстура<select id="builder-material"></select></label><label class="ramp-direction-field">Подъём рампы<select id="builder-ramp-direction"><option value="north">↑ Север</option><option value="south">↓ Юг</option><option value="east">→ Восток</option><option value="west">← Запад</option></select></label></div>
+                <div class="button-row builder-object-actions"><button id="builder-update-object" class="secondary">Применить</button><button id="builder-delete-object" class="danger">Удалить объект</button><button id="builder-clear-all" class="danger">Очистить всё</button></div>
+              </div>
+              <div class="builder-property-page" data-builder-property-page="textures">
+                <p class="builder-texture-help">Выберите стену, затем нажмите на текстуру. Для новой стены материал будет запомнен.</p>
+                <div id="builder-texture-palette" class="builder-texture-palette"></div>
+              </div>
               <div class="button-row builder-save-actions"><button id="builder-save" class="accent">Сохранить</button><button id="builder-export" class="secondary">Скачать JSON</button></div>
               <p id="builder-status" class="status-line">ЛКМ — поставить или выбрать, ПКМ — повернуть, колесо — масштаб</p>
             </aside>

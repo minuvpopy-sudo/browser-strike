@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createAtlasMaterials, disposeAtlasMaterials } from './MaterialLibrary.js';
 
 function canvasTexture(base, accent, type = 'stone') {
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128; const ctx = canvas.getContext('2d');
@@ -18,7 +19,8 @@ function canvasTexture(base, accent, type = 'stone') {
 export class DustInspiredMap {
   constructor(scene, config, settings) {
     this.scene=scene;this.config=config;this.settings=settings;this.group=new THREE.Group();this.group.name=config.name;this.raycastTargets=[];
-    this.materials={
+    this.materialLibrary=config.custom?createAtlasMaterials({anisotropy:settings?.values?.textureQuality==='high'?4:2}):null;
+    this.materials=this.materialLibrary?.materials||{
       sandstone:new THREE.MeshStandardMaterial({map:canvasTexture('#c7a46c','#f4d99d','stone'),roughness:.94,color:0xffffff}),
       stone:new THREE.MeshStandardMaterial({map:canvasTexture('#806e51','#dac58f','stone'),roughness:1}),
       wood:new THREE.MeshStandardMaterial({map:canvasTexture('#755031','#d3a15f','wood'),roughness:.86}),
@@ -46,5 +48,5 @@ export class DustInspiredMap {
     const signTexture=(text,color)=>{const c=document.createElement('canvas');c.width=256;c.height=96;const x=c.getContext('2d');x.fillStyle='#2b2d26';x.fillRect(0,0,256,96);x.strokeStyle=color;x.lineWidth=5;x.strokeRect(6,6,244,84);x.fillStyle=color;x.font='bold 45px Arial';x.textAlign='center';x.textBaseline='middle';x.fillText(text,128,50);return new THREE.CanvasTexture(c);};
     [['A →',0xd76a42,-7,2,17,Math.PI/2],['← B',0xd59a42,-19,2,-5,0]].forEach(([text,color,x,y,z,ry])=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(3.7,1.4),new THREE.MeshBasicMaterial({map:signTexture(text,color)}));m.position.set(x*scale,y,z*scale);m.rotation.y=ry;this.group.add(m);});
   }
-  dispose(){this.scene.remove(this.group);this.group.traverse(o=>{o.geometry?.dispose();});Object.values(this.materials).forEach(m=>{m.map?.dispose();m.dispose();});}
+  dispose(){this.scene.remove(this.group);this.group.traverse(o=>{o.geometry?.dispose();});if(this.materialLibrary)disposeAtlasMaterials(this.materialLibrary);else Object.values(this.materials).forEach(m=>{m.map?.dispose();m.dispose();});}
 }
