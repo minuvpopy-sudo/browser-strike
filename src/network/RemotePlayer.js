@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { COMBAT, ECONOMY, awardMoney } from '../config/MatchRules.js';
 import { WEAPONS } from '../weapons/WeaponDefinitions.js';
-import { animateCharacterLegs, createCharacterModel } from '../characters/CharacterModel.js';
+import { animateCharacterLegs, createCharacterModel, setCharacterCrouched } from '../characters/CharacterModel.js';
 
 function finite(value, fallback = 0) {
   return Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -102,11 +102,8 @@ export class RemotePlayer {
     delta = Math.atan2(Math.sin(delta), Math.cos(delta));
     this.group.rotation.y += delta * Math.min(1, dt * 16);
     const speed = Math.hypot(this.velocity.x, this.velocity.z);
+    setCharacterCrouched(this.group,this.crouched);
     animateCharacterLegs(this.group,speed);
-    const body = this.group.getObjectByName('body');
-    const head = this.group.getObjectByName('head');
-    if (body) body.position.y = this.crouched ? .76 : 1;
-    if (head) head.position.y = this.crouched ? 1.36 : 1.68;
     this.flashTime = Math.max(0, this.flashTime - dt);
     const light = this.group.getObjectByName('shot-light');
     if (light) light.intensity = this.flashTime > 0 ? 4 : 0;

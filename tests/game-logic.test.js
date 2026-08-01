@@ -199,6 +199,8 @@ test('все боты, включая передового, закупают о�
   assert.ok(defender.group.getObjectByName('weapon').scale.z>1);
   assert.equal(attacker.group.getObjectByName('body').geometry.type,'CapsuleGeometry');assert.equal(attacker.group.getObjectByName('body').castShadow,true);assert.equal(attacker.group.getObjectByName('leg-left').geometry.type,'CapsuleGeometry');assert.ok(attacker.group.getObjectByName('upper-arm-left'));assert.ok(attacker.group.getObjectByName('sunglasses-left'));assert.ok(attacker.group.getObjectByName('chest-emblem'));
   assert.equal(attacker.group.getObjectByName('body').userData.zone,'chest');assert.equal(attacker.group.getObjectByName('head').userData.zone,'head');assert.equal(attacker.group.getObjectByName('weapon-receiver').geometry.type,'CapsuleGeometry');
+  assert.equal(attacker.group.userData.operativeTeam,'attackers');assert.equal(attacker.group.userData.operativeVariant,0);assert.ok(attacker.group.getObjectByName('tactical-vest'));assert.ok(attacker.group.getObjectByName('backpack'));assert.ok(attacker.group.getObjectByName('knee-left'));
+  assert.equal(defender.group.userData.operativeTeam,'defenders');assert.equal(defender.group.userData.operativeVariant,1);assert.ok(defender.group.getObjectByName('defender-gas-mask'));assert.ok(defender.group.getObjectByName('radio'));
   attacker.dispose();defender.dispose();
 });
 
