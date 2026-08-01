@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import { createAtlasMaterials, disposeAtlasMaterials } from './MaterialLibrary.js';
 
+export const MAIN_SAND_TEXTURE_URL = new URL('../assets/sand-ground.jpg', import.meta.url).href;
+
+function loadedSurfaceTexture(url, repeatX, repeatY, anisotropy = 2) {
+  const texture=new THREE.TextureLoader().load(url);texture.name='main-map-sand';texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(repeatX,repeatY);texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;texture.anisotropy=anisotropy;return texture;
+}
+
 function canvasTexture(base, accent, type = 'stone') {
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128; const ctx = canvas.getContext('2d');
   ctx.fillStyle = base; ctx.fillRect(0,0,128,128);
@@ -21,7 +27,7 @@ export class DustInspiredMap {
     this.scene=scene;this.config=config;this.settings=settings;this.group=new THREE.Group();this.group.name=config.name;this.raycastTargets=[];
     this.materialLibrary=config.custom?createAtlasMaterials({anisotropy:settings?.values?.textureQuality==='high'?4:2}):null;
     this.materials=this.materialLibrary?.materials||{
-      sandstone:new THREE.MeshStandardMaterial({map:canvasTexture('#c7a46c','#f4d99d','stone'),roughness:.94,color:0xffffff}),
+      sandstone:new THREE.MeshStandardMaterial({map:loadedSurfaceTexture(MAIN_SAND_TEXTURE_URL,4,4,settings?.values?.textureQuality==='high'?4:2),roughness:.96,color:0xffffff}),
       stone:new THREE.MeshStandardMaterial({map:canvasTexture('#806e51','#dac58f','stone'),roughness:1}),
       wood:new THREE.MeshStandardMaterial({map:canvasTexture('#755031','#d3a15f','wood'),roughness:.86}),
       metal:new THREE.MeshStandardMaterial({color:0x4c5550,roughness:.55,metalness:.65}),

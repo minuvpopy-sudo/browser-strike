@@ -34,6 +34,7 @@ import { RemotePlayer } from '../src/network/RemotePlayer.js';
 import { WorkshopStore, createWorkshopMap, parseWorkshopMap, sanitizeWorkshopMap, serializeWorkshopMap, workshopMapToConfig } from '../src/map/WorkshopMap.js';
 import { MATERIAL_ATLAS_CELLS } from '../src/map/MaterialLibrary.js';
 import { MapWorkshop } from '../src/ui/MapWorkshop.js';
+import { MAIN_SAND_TEXTURE_URL } from '../src/map/DustInspiredMap.js';
 
 test('экономика ограничивает деньги и учитывает серию поражений',()=>{
   assert.equal(awardMoney(15900,1000),ECONOMY.maxMoney);
@@ -68,6 +69,10 @@ test('атлас содержит новые текстуры для карты 
 test('вкладка текстур применяет один выбранный материал к стене',()=>{
   const workshop=Object.create(MapWorkshop.prototype);workshop.map=createWorkshopMap();workshop.selectedId='cover-center-a';workshop.elements={material:{value:''}};workshop.rebuildScene=()=>{};workshop.setStatus=()=>{};workshop.syncTextureSelection=()=>{};
   workshop.applyTexture('redBand');assert.equal(workshop.elements.material.value,'redBand');assert.equal(workshop.map.objects.find((object)=>object.id==='cover-center-a').material,'redBand');
+});
+
+test('стены стандартной карты используют отдельную оптимизированную текстуру песка',()=>{
+  assert.match(MAIN_SAND_TEXTURE_URL,/sand-ground\.jpg$/);
 });
 
 test('боеприпасы не уходят ниже нуля, перезарядка переносит патроны',()=>{
